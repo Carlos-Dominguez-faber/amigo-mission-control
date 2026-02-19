@@ -19,6 +19,7 @@ interface UseTasksReturn {
   updateTaskStatus: (id: string, status: TaskStatus) => Promise<void>;
   updateTaskAssignee: (id: string, assignee: Assignee) => Promise<void>;
   updateTaskPriority: (id: string, priority: Priority) => Promise<void>;
+  updateTaskNotes: (id: string, notes: string) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   reload: () => Promise<void>;
 }
@@ -148,6 +149,13 @@ export function useTasks(): UseTasksReturn {
     await persistTasks(next);
   }
 
+  async function updateTaskNotes(id: string, notes: string): Promise<void> {
+    const next = tasks.map((t) =>
+      t.id === id ? { ...t, notes, updated_at: new Date().toISOString() } : t
+    );
+    await persistTasks(next);
+  }
+
   async function deleteTask(id: string): Promise<void> {
     const next = tasks.filter((t) => t.id !== id);
     await persistTasks(next);
@@ -161,6 +169,7 @@ export function useTasks(): UseTasksReturn {
     updateTaskStatus,
     updateTaskAssignee,
     updateTaskPriority,
+    updateTaskNotes,
     deleteTask,
     reload: loadTasks,
   };

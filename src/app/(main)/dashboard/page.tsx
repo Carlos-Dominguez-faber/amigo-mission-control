@@ -1,32 +1,71 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useState, useMemo } from "react";
+import { DashboardHeader } from "@/features/dashboard/components/DashboardHeader";
+import { NavigationTabs, type TabId } from "@/features/dashboard/components/NavigationTabs";
+import TaskBoard from "@/features/tasks/components/TaskBoard";
+import { DocumentPreviewModal } from "@/features/tasks/components/DocumentPreviewModal";
+import type { AvatarState } from "@/shared/components/AnimatedAvatar";
+import { useTasks } from "@/features/tasks/hooks/useTasks";
+
+function detectAvatarState(
+  tasks: { assignee: string; status: string; updated_at: string }[]
+): AvatarState {
+  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+  const amigoActive = tasks.some(
+    (t) =>
+      t.assignee === "amigo" &&
+      (t.status === "in-progress" || t.status === "todo") &&
+      new Date(t.updated_at).getTime() > fiveMinutesAgo
+  );
+  if (amigoActive) return "working";
+  if (tasks.some((t) => t.status !== "done")) return "thinking";
+  return "resting";
+}
+
+interface DocPreview {
+  url: string;
+  fileType: string;
+  name: string;
+}
 
 export default function DashboardPage() {
-  const router = useRouter()
+  const [activeTab, setActiveTab] = useState<TabId>("tasks");
+  const [previewDoc, setPreviewDoc] = useState<DocPreview | null>(null);
+  const { tasks, isOnline } = useTasks();
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.replace('/login')
-  }
+  const avatarState = useMemo(() => detectAvatarState(tasks), [tasks]);
 
   return (
-    <div className="min-h-screen bg-[#0b0c0e] p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm font-medium text-gray-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/20"
-          >
-            Log out
-          </button>
-        </div>
-        <p className="text-gray-500 text-sm">
-          Main app content goes here.
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#0b0c0e]">
+      <DashboardHeader avatarState={avatarState} isOnline={isOnline} />
+      <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {activeTab === "tasks" && (
+          <TaskBoard
+            onDocumentPreview={(url: string, fileType: string, name: string) =>
+              setPreviewDoc({ url, fileType, name })
+            }
+          />
+        )}
+
+        {activeTab !== "tasks" && (
+          <div className="text-center py-20 text-[#9aa0a6]">
+            <p className="text-lg font-medium">Coming Soon</p>
+            <p className="text-sm mt-1">This feature is under development.</p>
+          </div>
+        )}
+      </main>
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          url={previewDoc.url}
+          fileType={previewDoc.fileType}
+          name={previewDoc.name}
+          onClose={() => setPreviewDoc(null)}
+        />
+      )}
     </div>
-  )
+  );
 }

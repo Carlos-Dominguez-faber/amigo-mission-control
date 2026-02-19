@@ -85,3 +85,14 @@ export interface OfficeAgent {
   last_activity?: string;
   updated_at?: string;
 }
+
+export interface TaskDocument {
+  id: string;
+  task_id: string;
+  name: string;
+  file_type: string;
+  storage_path: string;
+  url: string;
+  size_bytes: number;
+  created_at: string;
+}

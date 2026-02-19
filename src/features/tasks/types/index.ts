@@ -1,1 +1,1 @@
-export type { Task, TaskStatus, Assignee, Priority } from "@/shared/types/database";
+export type { Task, TaskStatus, Assignee, Priority, TaskDocument } from "@/shared/types/database";
