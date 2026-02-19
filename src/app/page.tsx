@@ -13,6 +13,9 @@ interface Task {
   description?: string;
   status: TaskStatus;
   assignee: Assignee;
+  priority?: "low" | "medium" | "high";
+  notes?: string;
+  linkedDocs?: string[];
   createdAt: number;
   updatedAt: number;
 }
@@ -62,6 +65,8 @@ function detectAvatarState(tasks: Task[]): AvatarState {
 export default function TaskBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [isLoaded, setIsLoaded] = useState(false);
@@ -160,6 +165,8 @@ export default function TaskBoard() {
     const task: Task = {
       id: `task-${now}`,
       title: newTaskTitle,
+      description: newTaskDescription,
+      priority: newTaskPriority,
       status: "todo",
       assignee: newTaskAssignee,
       createdAt: now,
@@ -168,6 +175,8 @@ export default function TaskBoard() {
 
     setTasks((prev) => [...prev, task]);
     setNewTaskTitle("");
+    setNewTaskDescription("");
+    setNewTaskPriority("medium");
   };
 
   const handleStatusChange = (taskId: string, status: TaskStatus) => {
@@ -351,6 +360,32 @@ export default function TaskBoard() {
             </div>
           </div>
           
+          {/* Desktop Navigation Tabs */}
+          <div className="hidden md:flex gap-1">
+            {[
+              { key: "tasks", icon: "📋", label: "Tasks" },
+              { key: "content", icon: "🎬", label: "Content" },
+              { key: "calendar", icon: "📅", label: "Calendar" },
+              { key: "memory", icon: "🧠", label: "Memory" },
+              { key: "team", icon: "👥", label: "Team" },
+              { key: "office", icon: "🏢", label: "Office" },
+              { key: "docs", icon: "📁", label: "Docs" },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setView(tab.key as typeof view)}
+                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 transition-colors ${
+                  view === tab.key 
+                    ? "bg-[#7c3aed] text-white" 
+                    : "bg-[#16181a] text-[#9aa0a6] hover:bg-[#272829]"
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+          
           {/* Stats */}
           <div className="flex gap-4 md:gap-6 text-xs md:text-sm">
             <div>
@@ -375,28 +410,52 @@ export default function TaskBoard() {
               onSubmit={handleCreateTask}
               className="p-4 md:p-6 pb-0"
             >
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <input
+                    type="text"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    placeholder="Nueva tarea..."
+                    className="flex-1 px-3 md:px-4 py-2 md:py-3 bg-[#16181a] border border-[#272829] rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-white placeholder-[#9aa0a6] text-sm"
+                  />
+                  <select
+                    value={newTaskPriority}
+                    onChange={(e) => setNewTaskPriority(e.target.value as "low" | "medium" | "high")}
+                    className={`px-3 py-2 rounded-xl text-sm ${
+                      newTaskPriority === "high" 
+                        ? "bg-red-500/20 text-red-400 border border-red-500/30" 
+                        : newTaskPriority === "low"
+                        ? "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30"
+                        : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                    }`}
+                  >
+                    <option value="low">🟢 Low</option>
+                    <option value="medium">🟡 Medium</option>
+                    <option value="high">🔴 High</option>
+                  </select>
+                  <select
+                    value={newTaskAssignee}
+                    onChange={(e) => setNewTaskAssignee(e.target.value as Assignee)}
+                    className="px-3 md:px-4 py-2 md:py-3 bg-[#16181a] border border-[#272829] rounded-xl focus:ring-2 focus:ring-[#7c3aed] text-white text-sm"
+                  >
+                    <option value="carlos">👤</option>
+                    <option value="amigo">🤖</option>
+                  </select>
+                  <button
+                    type="submit"
+                    className="px-4 md:px-6 py-2 md:py-3 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-medium rounded-xl transition-colors text-sm"
+                  >
+                    +
+                  </button>
+                </div>
                 <input
                   type="text"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="Nueva tarea..."
-                  className="flex-1 px-3 md:px-4 py-2 md:py-3 bg-[#16181a] border border-[#272829] rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-white placeholder-[#9aa0a6] text-sm"
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  placeholder="Descripción / Notas (opcional)..."
+                  className="w-full px-3 py-2 bg-[#16181a] border border-[#272829] rounded-xl text-sm text-white placeholder-[#9aa0a6]"
                 />
-                <select
-                  value={newTaskAssignee}
-                  onChange={(e) => setNewTaskAssignee(e.target.value as Assignee)}
-                  className="px-3 md:px-4 py-2 md:py-3 bg-[#16181a] border border-[#272829] rounded-xl focus:ring-2 focus:ring-[#7c3aed] text-white text-sm"
-                >
-                  <option value="carlos">👤</option>
-                  <option value="amigo">🤖</option>
-                </select>
-                <button
-                  type="submit"
-                  className="px-4 md:px-6 py-2 md:py-3 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-medium rounded-xl transition-colors text-sm"
-                >
-                  +
-                </button>
               </div>
             </form>
 
@@ -420,19 +479,70 @@ export default function TaskBoard() {
                       {tasksByStatus(status).map((task) => (
                         <div
                           key={task.id}
-                          className={`rounded-2xl border p-3 ${statusColors[status]} hover:border-[#7c3aed]/50 transition-colors`}
+                          className={`rounded-2xl border p-3 ${statusColors[status]} hover:border-[#7c3aed]/50 transition-colors cursor-pointer`}
+                          onClick={() => {
+                            // Toggle notes view - for now just show alert
+                            if (task.notes) {
+                              alert(`📝 Notas:\n${task.notes}`);
+                            }
+                          }}
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <p className="font-medium text-sm pr-2 line-clamp-2">{task.title}</p>
+                            <div className="flex items-start gap-2">
+                              {/* Priority Indicator */}
+                              {task.priority === "high" && (
+                                <span className="text-red-400 text-xs">🔴</span>
+                              )}
+                              {task.priority === "medium" && (
+                                <span className="text-yellow-400 text-xs">🟡</span>
+                              )}
+                              <p className="font-medium text-sm pr-2 line-clamp-2">{task.title}</p>
+                            </div>
                             <button
-                              onClick={() => handleDelete(task.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(task.id);
+                              }}
                               className="text-[#9aa0a6] hover:text-red-500 transition-colors text-xs flex-shrink-0"
                             >
                               ✕
                             </button>
                           </div>
 
+                          {/* Description/Notes preview */}
+                          {task.description && (
+                            <p className="text-xs text-[#9aa0a6] mb-2 line-clamp-1">{task.description}</p>
+                          )}
+
+                          {/* Notes indicator */}
+                          {task.notes && (
+                            <p className="text-xs text-[#7c3aed] mb-2">📝 {task.notes.substring(0, 30)}...</p>
+                          )}
+
                           <div className="flex flex-wrap gap-1.5">
+                            {/* Priority Select */}
+                            <select
+                              value={task.priority || "medium"}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                const newPriority = e.target.value as "low" | "medium" | "high";
+                                setTasks(tasks.map(t => 
+                                  t.id === task.id ? { ...t, priority: newPriority, updatedAt: Date.now() } : t
+                                ));
+                              }}
+                              className={`text-xs px-2 py-1 rounded-lg ${
+                                task.priority === "high" 
+                                  ? "bg-red-500/20 text-red-400 border border-red-500/30" 
+                                  : task.priority === "low"
+                                  ? "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30"
+                                  : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                              }`}
+                            >
+                              <option value="low">🟢 Low</option>
+                              <option value="medium">🟡 Med</option>
+                              <option value="high">🔴 High</option>
+                            </select>
+
                             <select
                               value={task.status}
                               onChange={(e) =>
