@@ -65,7 +65,7 @@ export default function TaskBoard() {
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team">("tasks");
+  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office">("tasks");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -242,6 +242,13 @@ export default function TaskBoard() {
             👥
           </button>
           <button
+            onClick={() => setView("office")}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === "office" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            title="Office"
+          >
+            🏢
+          </button>
+          <button
             onClick={() => setView("docs")}
             className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === "docs" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
             title="Docs"
@@ -316,6 +323,15 @@ export default function TaskBoard() {
           title="Team"
         >
           👥
+        </button>
+        <button
+          onClick={() => setView("office")}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            view === "office" ? "bg-[#7c3aed]" : "hover:bg-[#272829]"
+          }`}
+          title="Office"
+        >
+          🏢
         </button>
       </div>
 
@@ -466,6 +482,8 @@ export default function TaskBoard() {
           <MemoryView />
         ) : view === "team" ? (
           <TeamView />
+        ) : view === "office" ? (
+          <OfficeView />
         ) : (
           <ContentPipeline />
         )}
@@ -1761,6 +1779,230 @@ function TeamView() {
           + Agregar Agente
         </button>
       </div>
+    </div>
+  );
+}
+
+// Office Types and Component
+type AgentState = "planning" | "executing" | "waiting_api" | "waiting_human" | "error" | "review" | "idle";
+
+interface OfficeAgent {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string;
+  color: string;
+  colorHex: string;
+  state: AgentState;
+  currentTask?: string;
+  taskProgress?: number;
+  zone: "desk" | "meeting" | "lobby";
+  lastActivity?: number;
+  channel?: string;
+}
+
+const stateConfig: Record<AgentState, { label: string; color: string; bgColor: string; icon: string }> = {
+  planning: { label: "Planificando", color: "text-blue-400", bgColor: "bg-blue-400", icon: "📝" },
+  executing: { label: "Ejecutando", color: "text-green-400", bgColor: "bg-green-400", icon: "⚡" },
+  waiting_api: { label: "Esperando API", color: "text-yellow-400", bgColor: "bg-yellow-400", icon: "⏳" },
+  waiting_human: { label: "Esperando input", color: "text-purple-400", bgColor: "bg-purple-400", icon: "💬" },
+  error: { label: "Error", color: "text-red-400", bgColor: "bg-red-400", icon: "⚠️" },
+  review: { label: "Revisión", color: "text-cyan-400", bgColor: "bg-cyan-400", icon: "👀" },
+  idle: { label: "Inactivo", color: "text-zinc-400", bgColor: "bg-zinc-400", icon: "💤" },
+};
+
+// Sample agents with states
+const sampleAgents: OfficeAgent[] = [
+  { id: "amigo", name: "Amigo", role: "Chief of Staff", avatar: "🤝", color: "slate", colorHex: "#64748b", state: "executing", currentTask: "Respondiendo a Carlos", taskProgress: 65, zone: "desk", lastActivity: Date.now(), channel: "Telegram" },
+  { id: "scout", name: "Scout", role: "Research", avatar: "🔍", color: "teal", colorHex: "#14b8a6", state: "idle", zone: "lobby", lastActivity: Date.now() - 300000 },
+  { id: "quill", name: "Quill", role: "Writer", avatar: "✍️", color: "purple", colorHex: "#8b5cf6", state: "executing", currentTask: "Escribiendo script para Reel", taskProgress: 30, zone: "desk", lastActivity: Date.now(), channel: "Content" },
+  { id: "pixel", name: "Pixel", role: "Designer", avatar: "🎨", color: "pink", colorHex: "#ec4899", state: "waiting_api", currentTask: "Generando thumbnail", zone: "desk", lastActivity: Date.now(), channel: "Content" },
+  { id: "echo", name: "Echo", role: "Outreach", avatar: "📢", color: "cyan", colorHex: "#06b6d4", state: "waiting_human", currentTask: "Esperando approve de mensaje", zone: "desk", lastActivity: Date.now(), channel: "WhatsApp" },
+  { id: "codex", name: "Codex", role: "Developer", avatar: "⚙️", color: "orange", colorHex: "#f97316", state: "idle", zone: "lobby", lastActivity: Date.now() - 600000 },
+];
+
+function OfficeView() {
+  const [agents, setAgents] = useState<OfficeAgent[]>(sampleAgents);
+  const [selectedAgent, setSelectedAgent] = useState<OfficeAgent | null>(null);
+
+  // Calculate KPIs
+  const totalAgents = agents.length;
+  const activeAgents = agents.filter(a => a.state !== "idle").length;
+  const idleAgents = agents.filter(a => a.state === "idle").length;
+  const errorAgents = agents.filter(a => a.state === "error").length;
+  const tasksInProgress = agents.filter(a => ["executing", "planning", "waiting_api"].includes(a.state)).length;
+
+  const getAgentPosition = (agent: OfficeAgent, index: number) => {
+    // Zone-based positioning
+    if (agent.zone === "desk") {
+      const deskPositions = [
+        { x: 10, y: 20 }, { x: 35, y: 20 }, { x: 60, y: 20 }, // Row 1
+        { x: 10, y: 55 }, { x: 35, y: 55 }, { x: 60, y: 55 }, // Row 2
+      ];
+      return deskPositions[index % 6] || { x: 10, y: 20 };
+    }
+    if (agent.zone === "meeting") {
+      return { x: 80, y: 35 };
+    }
+    return { x: 85, y: 75 }; // lobby
+  };
+
+  return (
+    <div className="flex h-[calc(100vh-80px)]">
+      {/* Office Canvas */}
+      <div className="flex-1 relative bg-[#0f1113] overflow-hidden">
+        {/* Background Grid */}
+        <div className="absolute inset-0 opacity-10" 
+          style={{ backgroundImage: 'radial-gradient(circle, #272829 1px, transparent 1px)', backgroundSize: '20px 20px' }} 
+        />
+
+        {/* Zone Labels */}
+        <div className="absolute top-4 left-4 text-xs text-[#9aa0a6] font-medium">ESCRITORIOS</div>
+        <div className="absolute top-4 right-4 text-xs text-[#9aa0a6] font-medium">SALA DE JUNTAS</div>
+        <div className="absolute bottom-4 right-4 text-xs text-[#9aa0a6] font-medium">LOBBY</div>
+
+        {/* Desks Area */}
+        <div className="absolute inset-x-4 top-10 bottom-1/3 bg-[#16181a] rounded-xl border border-[#272829] p-4">
+          <div className="grid grid-cols-3 gap-4 h-full">
+            {[0,1,2,3,4,5].map(i => (
+              <div key={i} className="bg-[#0f1113] rounded-lg border border-dashed border-[#272829] flex items-center justify-center">
+                <span className="text-[#9aa0a6] text-xs">Desk {i+1}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Meeting Room */}
+        <div className="absolute right-4 top-20 w-32 h-40 bg-[#16181a] rounded-xl border border-[#272829] flex items-center justify-center">
+          <span className="text-[#9aa0a6] text-xs">Sala</span>
+        </div>
+
+        {/* Lobby */}
+        <div className="absolute right-4 bottom-4 w-32 h-24 bg-[#16181a] rounded-xl border border-[#272829] flex items-center justify-center">
+          <span className="text-[#9aa0a6] text-xs">Lobby</span>
+        </div>
+
+        {/* Agents */}
+        {agents.map((agent, index) => {
+          const pos = getAgentPosition(agent, index);
+          const state = stateConfig[agent.state];
+          const isSelected = selectedAgent?.id === agent.id;
+          
+          return (
+            <div
+              key={agent.id}
+              className={`absolute cursor-pointer transition-all duration-300 ${isSelected ? 'scale-110 z-10' : 'hover:scale-105'}`}
+              style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: 'translate(-50%, -50%)' }}
+              onClick={() => setSelectedAgent(agent)}
+            >
+              <div className="flex flex-col items-center">
+                {/* Status Indicator */}
+                <div className={`w-3 h-3 rounded-full mb-1 ${state.bgColor} ${agent.state === 'executing' ? 'animate-pulse' : ''}`} />
+                
+                {/* Avatar */}
+                <div 
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl border-2 transition-all ${isSelected ? 'border-[#7c3aed]' : ''}`}
+                  style={{ backgroundColor: agent.colorHex + '20', borderColor: isSelected ? '#7c3aed' : agent.colorHex }}
+                >
+                  {agent.avatar}
+                </div>
+                
+                {/* Name */}
+                <span className="text-xs mt-1 font-medium">{agent.name}</span>
+                
+                {/* State Badge */}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded ${state.color} bg-[#0f1113]`}>
+                  {state.icon}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Sidebar */}
+      {selectedAgent && (
+        <div className="w-72 bg-[#0f1113] border-l border-[#272829] p-4 overflow-y-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: selectedAgent.colorHex + '20' }}>
+              {selectedAgent.avatar}
+            </div>
+            <div>
+              <h3 className="font-bold">{selectedAgent.name}</h3>
+              <p className="text-xs text-[#9aa0a6]">{selectedAgent.role}</p>
+            </div>
+          </div>
+
+          {/* State */}
+          <div className="mb-4">
+            <label className="text-xs text-[#9aa0a6]">Estado</label>
+            <div className={`flex items-center gap-2 mt-1`}>
+              <span className={`w-2 h-2 rounded-full ${stateConfig[selectedAgent.state].bgColor}`} />
+              <span className={`text-sm ${stateConfig[selectedAgent.state].color}`}>
+                {stateConfig[selectedAgent.state].icon} {stateConfig[selectedAgent.state].label}
+              </span>
+            </div>
+          </div>
+
+          {/* Current Task */}
+          {selectedAgent.currentTask && (
+            <div className="mb-4">
+              <label className="text-xs text-[#9aa0a6]">Tarea Actual</label>
+              <p className="text-sm mt-1">{selectedAgent.currentTask}</p>
+              {selectedAgent.taskProgress !== undefined && (
+                <div className="mt-2 h-1 bg-[#272829] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-[#7c3aed]" 
+                    style={{ width: `${selectedAgent.taskProgress}%` }} 
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Channel */}
+          {selectedAgent.channel && (
+            <div className="mb-4">
+              <label className="text-xs text-[#9aa0a6]">Canal</label>
+              <p className="text-sm mt-1">{selectedAgent.channel}</p>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-2 mt-4">
+            <button className="flex-1 px-3 py-2 bg-[#272829] rounded-lg text-xs hover:bg-[#3f3f46]">
+              ⏸️ Pausar
+            </button>
+            <button className="flex-1 px-3 py-2 bg-[#272829] rounded-lg text-xs hover:bg-[#3f3f46]">
+              📋 Ver tarea
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* KPIs Bar (when no agent selected) */}
+      {!selectedAgent && (
+        <div className="absolute bottom-4 left-4 right-4 flex gap-4 justify-center">
+          <div className="px-4 py-2 bg-[#16181a] border border-[#272829] rounded-xl flex items-center gap-2">
+            <span className="text-green-400">⚡</span>
+            <span className="text-sm">{activeAgents} activos</span>
+          </div>
+          <div className="px-4 py-2 bg-[#16181a] border border-[#272829] rounded-xl flex items-center gap-2">
+            <span className="text-yellow-400">📋</span>
+            <span className="text-sm">{tasksInProgress} tareas</span>
+          </div>
+          <div className="px-4 py-2 bg-[#16181a] border border-[#272829] rounded-xl flex items-center gap-2">
+            <span className="text-zinc-400">💤</span>
+            <span className="text-sm">{idleAgents} idle</span>
+          </div>
+          {errorAgents > 0 && (
+            <div className="px-4 py-2 bg-[#16181a] border border-red-500/30 rounded-xl flex items-center gap-2">
+              <span className="text-red-400">⚠️</span>
+              <span className="text-sm">{errorAgents} errores</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
