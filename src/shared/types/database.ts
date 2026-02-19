@@ -16,12 +16,27 @@ export interface Task {
   updated_at: string;
 }
 
+export type LinkedType = "task" | "content" | "calendar" | "memory";
+
+export interface DocFolder {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  color: string;
+  created_at: string;
+}
+
 export interface Document {
   id: string;
   name: string;
-  type: string;
-  content?: string;
-  url?: string;
+  file_type: string;
+  storage_path: string;
+  url: string;
+  size_bytes: number;
+  folder_id: string | null;
+  linked_type: LinkedType | null;
+  linked_id: string | null;
+  uploaded_by: string;
   uploaded_at: string;
 }
 
