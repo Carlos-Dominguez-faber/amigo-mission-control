@@ -512,10 +512,8 @@ function DocumentRepository() {
             </div>
             <div className="p-4">
               {selectedDoc.type === "md" && selectedDoc.content && (
-                <div className="prose prose-invert max-w-none">
-                  <ReactMarkdown className="text-sm text-[#e6e6e6] bg-[#0f1113] p-6 rounded-xl overflow-auto">
-                    {selectedDoc.content}
-                  </ReactMarkdown>
+                <div className="bg-[#0f1113] p-6 rounded-xl overflow-auto text-sm text-[#e6e6e6]">
+                  <ReactMarkdown>{selectedDoc.content}</ReactMarkdown>
                 </div>
               )}
               {selectedDoc.type === "image" && selectedDoc.url && (
