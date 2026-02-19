@@ -22,9 +22,9 @@ const statusLabels: Record<TaskStatus, string> = {
 };
 
 const statusColors: Record<TaskStatus, string> = {
-  "todo": "bg-gray-100 border-gray-300",
-  "in-progress": "bg-blue-50 border-blue-300",
-  "done": "bg-green-50 border-green-300",
+  "todo": "bg-zinc-900 border-orange-500/30",
+  "in-progress": "bg-zinc-900 border-orange-500/50",
+  "done": "bg-zinc-900 border-green-500/30",
 };
 
 const STORAGE_KEY = "amigo-mission-control-tasks";
@@ -35,7 +35,6 @@ export default function TaskBoard() {
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -48,7 +47,6 @@ export default function TaskBoard() {
     setIsLoaded(true);
   }, []);
 
-  // Save to localStorage on change
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
@@ -98,64 +96,67 @@ export default function TaskBoard() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-orange-500">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-black text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            🤝 Amigo Mission Control - Tasks
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">
+            <span className="text-orange-500">🤝</span> Mission Control
           </h1>
-          <span className="text-sm text-gray-500">📱 Local Storage</span>
+          <span className="text-xs text-zinc-500">📱 Local Storage</span>
         </div>
 
         {/* Create Task Form */}
         <form
           onSubmit={handleCreateTask}
-          className="bg-white rounded-lg shadow p-4 mb-8 flex gap-3 items-center"
+          className="bg-zinc-900 rounded-lg border border-zinc-800 p-4 mb-8"
         >
-          <input
-            type="text"
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            placeholder="Nueva tarea..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <select
-            value={newTaskAssignee}
-            onChange={(e) => setNewTaskAssignee(e.target.value as Assignee)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="carlos">Carlos</option>
-            <option value="amigo">Amigo</option>
-          </select>
-          <button
-            type="submit"
-            className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Agregar
-          </button>
+          <div className="flex flex-col md:flex-row gap-3">
+            <input
+              type="text"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              placeholder="Nueva tarea..."
+              className="flex-1 px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-zinc-500"
+            />
+            <select
+              value={newTaskAssignee}
+              onChange={(e) => setNewTaskAssignee(e.target.value as Assignee)}
+              className="px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg focus:ring-2 focus:ring-orange-500 text-white"
+            >
+              <option value="carlos">👤 Carlos</option>
+              <option value="amigo">🤖 Amigo</option>
+            </select>
+            <button
+              type="submit"
+              className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors"
+            >
+              Agregar
+            </button>
+          </div>
         </form>
 
-        {/* Kanban Board */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Kanban Board - Mobile: vertical stack, Desktop: horizontal */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {(["todo", "in-progress", "done"] as TaskStatus[]).map((status) => (
             <div
               key={status}
               className={`rounded-lg border-2 p-4 ${statusColors[status]}`}
             >
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 {status === "todo" && "📋"}
                 {status === "in-progress" && "⚡"}
                 {status === "done" && "✅"}
-                {statusLabels[status]}
-                <span className="text-sm font-normal text-gray-500">
-                  ({tasksByStatus(status).length})
+                <span className="text-zinc-300">{statusLabels[status]}</span>
+                <span className="ml-auto text-sm font-normal text-zinc-500">
+                  {tasksByStatus(status).length}
                 </span>
               </h2>
 
@@ -163,42 +164,40 @@ export default function TaskBoard() {
                 {tasksByStatus(status).map((task) => (
                   <div
                     key={task.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                    className="bg-zinc-950 rounded-lg border border-zinc-800 p-4 hover:border-orange-500/50 transition-colors"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="font-medium text-gray-900">{task.title}</p>
+                    <div className="flex justify-between items-start mb-3">
+                      <p className="font-medium text-white pr-2">{task.title}</p>
                       <button
                         onClick={() => handleDelete(task.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors"
+                        className="text-zinc-600 hover:text-red-500 transition-colors flex-shrink-0"
                       >
                         ✕
                       </button>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {/* Status Selector */}
+                    <div className="flex flex-wrap gap-2">
                       <select
                         value={task.status}
                         onChange={(e) =>
                           handleStatusChange(task.id, e.target.value as TaskStatus)
                         }
-                        className="text-xs px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                        className="text-xs px-2 py-1.5 bg-zinc-900 border border-zinc-700 rounded text-zinc-300"
                       >
                         <option value="todo">To Do</option>
                         <option value="in-progress">In Progress</option>
                         <option value="done">Done</option>
                       </select>
 
-                      {/* Assignee Selector */}
                       <select
                         value={task.assignee}
                         onChange={(e) =>
                           handleAssigneeChange(task.id, e.target.value as Assignee)
                         }
-                        className={`text-xs px-2 py-1 border rounded ${
+                        className={`text-xs px-2 py-1.5 border rounded ${
                           task.assignee === "carlos"
-                            ? "bg-orange-50 border-orange-300 text-orange-700"
-                            : "bg-purple-50 border-purple-300 text-purple-700"
+                            ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                            : "bg-purple-500/10 border-purple-500/30 text-purple-400"
                         }`}
                       >
                         <option value="carlos">👤 Carlos</option>
@@ -206,14 +205,14 @@ export default function TaskBoard() {
                       </select>
                     </div>
 
-                    <p className="text-xs text-gray-400 mt-2">
+                    <p className="text-xs text-zinc-600 mt-2">
                       {new Date(task.updatedAt).toLocaleString()}
                     </p>
                   </div>
                 ))}
 
                 {tasksByStatus(status).length === 0 && (
-                  <p className="text-gray-400 text-sm text-center py-4">
+                  <p className="text-zinc-600 text-sm text-center py-4">
                     No tasks
                   </p>
                 )}
