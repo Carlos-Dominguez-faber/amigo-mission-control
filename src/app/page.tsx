@@ -136,6 +136,16 @@ export default function TaskBoard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const { tasks, isLoaded, isOnline, addTask, updateTaskStatus, updateTaskAssignee, updateTaskPriority, deleteTask } = useTasks();
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
+  const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
+  const [linkedDocs, setLinkedDocs] = useState<Record<string, string[]>>({});
+  const [showDocsModal, setShowDocsModal] = useState<string | null>(null);
+  const [avatarState, setAvatarState] = useState<AvatarState>("resting");
+  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office">("tasks");
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -158,14 +168,6 @@ export default function TaskBoard() {
   }
 
   if (!isAuthenticated) return null;
-
-  const { tasks, isLoaded, isOnline, addTask, updateTaskStatus, updateTaskAssignee, updateTaskPriority, deleteTask } = useTasks();
-  const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskDescription, setNewTaskDescription] = useState("");
-  const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
-  const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
-  const [avatarState, setAvatarState] = useState<AvatarState>("resting");
-  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office">("tasks");
 
   useEffect(() => {
     if (isLoaded) {
