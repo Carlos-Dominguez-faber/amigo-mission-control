@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import AnimatedAvatar from "@/components/AnimatedAvatar";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 type Assignee = "carlos" | "amigo";
@@ -14,6 +15,8 @@ interface Task {
   createdAt: number;
   updatedAt: number;
 }
+
+type AvatarState = "working" | "thinking" | "resting";
 
 const statusLabels: Record<TaskStatus, string> = {
   "todo": "To Do",
@@ -33,6 +36,7 @@ export default function TaskBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
+  const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -106,10 +110,39 @@ export default function TaskBoard() {
     <div className="min-h-screen bg-black text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold">
-            <span className="text-orange-500">🤝</span> Mission Control
-          </h1>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+          <div className="flex items-center gap-4">
+            <AnimatedAvatar state={avatarState} size="md" />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAvatarState("working")}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
+                  avatarState === "working" ? "bg-orange-500" : "bg-zinc-800 hover:bg-zinc-700"
+                }`}
+                title="Working"
+              >
+                ⚡
+              </button>
+              <button
+                onClick={() => setAvatarState("thinking")}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
+                  avatarState === "thinking" ? "bg-yellow-500" : "bg-zinc-800 hover:bg-zinc-700"
+                }`}
+                title="Thinking"
+              >
+                🤔
+              </button>
+              <button
+                onClick={() => setAvatarState("resting")}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
+                  avatarState === "resting" ? "bg-zinc-600" : "bg-zinc-800 hover:bg-zinc-700"
+                }`}
+                title="Resting"
+              >
+                💤
+              </button>
+            </div>
+          </div>
           <span className="text-xs text-zinc-500">📱 Local Storage</span>
         </div>
 
