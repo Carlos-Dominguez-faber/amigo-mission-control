@@ -29,3 +29,9 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
 }
+
+.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}

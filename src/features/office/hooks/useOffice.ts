@@ -7,6 +7,7 @@ import type { OfficeAgent } from "@/features/office/types";
 interface UseOfficeReturn {
   agents: OfficeAgent[];
   isLoaded: boolean;
+  updateAgent: (id: string, updates: Partial<OfficeAgent>) => Promise<void>;
 }
 
 export function useOffice(): UseOfficeReturn {
@@ -32,8 +33,19 @@ export function useOffice(): UseOfficeReturn {
     loadAgents();
   }, [loadAgents]);
 
+  async function updateAgent(id: string, updates: Partial<OfficeAgent>): Promise<void> {
+    const payload = { ...updates, updated_at: new Date().toISOString() };
+    const { error } = await supabase
+      .from("office_agents")
+      .update(payload)
+      .eq("id", id);
+    if (error) throw error;
+    setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, ...payload } : a)));
+  }
+
   return {
     agents,
     isLoaded,
+    updateAgent,
   };
 }
