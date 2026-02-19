@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const SUPABASE_URL = "https://cvofvffeabstndbuzwjc.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2b2Z2ZmZlYWJzdG5kYnV6d2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MTA0NDgsImV4cCI6MjA4NzA4NjQ0OH0.aEeyaSMDKWuUeNTPRHguPhwrlXbB6yj5T2FdPwcdbSM";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,35 +12,40 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [eyeState, setEyeState] = useState<"closed" | "open" | "blink">("open");
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUser(data.user);
-        window.location.href = "/";
-      }
-    });
-  }, []);
+  const router = useRouter();
 
   const handleLogin = async () => {
+    if (!email || !password) return;
+    
     setLoading(true);
     setError("");
     setEyeState("closed");
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_KEY,
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) throw error;
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error_description || data.msg || "Login failed");
+      }
+
+      // Store token
+      localStorage.setItem("sb-access-token", data.access_token);
+      localStorage.setItem("sb-refresh-token", data.refresh_token);
 
       setEyeState("open");
       setTimeout(() => setEyeState("blink"), 300);
       setTimeout(() => setEyeState("open"), 500);
       
-      window.location.href = "/";
+      router.push("/");
     } catch (err: any) {
       setError(err.message);
       setEyeState("open");
@@ -88,7 +91,7 @@ export default function LoginPage() {
       <p className="text-xs text-[#6b7280] mb-8">Task • Content • Calendar • Memory • Team • Office</p>
 
       {error && (
-        <div className={`w-full max-w-sm p-3 rounded-xl mb-4 ${error.startsWith("✅") ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+        <div className="w-full max-w-sm p-3 rounded-xl mb-4 bg-red-500/20 text-red-400">
           {error}
         </div>
       )}
@@ -108,15 +111,13 @@ export default function LoginPage() {
           placeholder="Password"
           className="w-full px-4 py-3 bg-[#16181a] border border-[#272829] rounded-xl text-white placeholder-[#9aa0a6] focus:ring-2 focus:ring-orange-500 focus:border-transparent"
         />
-        <div className="flex gap-2">
-          <button
-            onClick={handleLogin}
-            disabled={loading || !email || !password}
-            className="flex-1 py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-600/50 text-white font-medium rounded-xl transition-colors"
-          >
-            {loading ? "..." : "Login"}
-          </button>
-        </div>
+        <button
+          onClick={handleLogin}
+          disabled={loading || !email || !password}
+          className="w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-600/50 text-white font-medium rounded-xl transition-colors"
+        >
+          {loading ? "Loading..." : "Login"}
+        </button>
       </div>
 
       <p className="text-xs text-[#6b7280] mt-8">

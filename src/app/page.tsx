@@ -147,16 +147,13 @@ export default function TaskBoard() {
   const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office">("tasks");
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
-      } else {
-        setIsAuthenticated(true);
-      }
-      setLoading(false);
-    };
-    checkAuth();
+    const token = localStorage.getItem("sb-access-token");
+    if (!token) {
+      router.push("/login");
+    } else {
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
   }, [router]);
 
   if (loading) {
