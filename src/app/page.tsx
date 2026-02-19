@@ -271,6 +271,14 @@ export default function TaskBoard() {
                   <button type="submit" className="px-4 md:px-6 py-2 md:py-3 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl text-sm font-medium">+</button>
                 </div>
                 <input type="text" value={newTaskDescription} onChange={e => setNewTaskDescription(e.target.value)} placeholder="Descripción / Notas..." className="w-full px-3 py-2 bg-[#16181a] border border-[#272829] rounded-xl text-sm text-white" />
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 px-3 py-2 bg-[#16181a] border border-[#272829] rounded-xl text-sm text-[#9aa0a6] cursor-pointer hover:border-[#7c3aed]/50">
+                    <span>📎</span>
+                    <span className="text-xs">Adjuntar documento</span>
+                    <input type="file" className="hidden" disabled title="Storage pendiente de configurar" />
+                  </label>
+                  <span className="text-xs text-[#6b7280]">(próximamente)</span>
+                </div>
               </div>
             </form>
 
