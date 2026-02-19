@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import AnimatedAvatar, { AvatarState } from "@/components/AnimatedAvatar";
 import { useRouter } from "next/navigation";
+import { useContent, useCalendar, useMemories, useTeam, useOffice } from "@/hooks/useData";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 type Assignee = "carlos" | "amigo";
@@ -145,6 +146,13 @@ export default function TaskBoard() {
   const [showDocsModal, setShowDocsModal] = useState<string | null>(null);
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office">("tasks");
+
+  // Data hooks
+  const { items: contentItems, isLoaded: contentLoaded, addContent, updateContentStage } = useContent();
+  const { events: calendarEvents, isLoaded: calendarLoaded, addEvent } = useCalendar();
+  const { memories, isLoaded: memoryLoaded, addMemory } = useMemories();
+  const { members: teamMembers, isLoaded: teamLoaded } = useTeam();
+  const { agents: officeAgents, isLoaded: officeLoaded } = useOffice();
 
   useEffect(() => {
     const token = localStorage.getItem("sb-access-token");
@@ -303,7 +311,135 @@ export default function TaskBoard() {
             </div>
           </>
         )}
-        {view === "docs" && <div className="p-6 text-[#9aa0a6]">📁 Documents - Coming soon</div>}
+        {view === "docs" && (
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-white mb-4">📁 Documents</h2>
+            <div className="bg-[#16181a] rounded-2xl p-6 border border-[#272829]">
+              <p className="text-[#9aa0a6]">Coming soon - Supabase Storage integration</p>
+            </div>
+          </div>
+        )}
+
+        {view === "content" && (
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-white mb-4">🎬 Content Pipeline</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {["idea", "script", "thumbnail", "filming", "editing", "published"].map((stage) => (
+                <div key={stage} className="bg-[#16181a] rounded-2xl p-4 border border-[#272829]">
+                  <h3 className="font-medium text-white mb-3 capitalize">{stage}</h3>
+                  <div className="space-y-2">
+                    {contentItems.filter(i => i.stage === stage).map(item => (
+                      <div key={item.id} className="p-3 bg-[#0f1113] rounded-xl border border-[#272829]">
+                        <p className="text-sm text-white">{item.title}</p>
+                        <p className="text-xs text-[#9aa0a6]">{item.platform} • {item.assignee}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {view === "calendar" && (
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-white mb-4">📅 Calendar</h2>
+            <div className="bg-[#16181a] rounded-2xl p-6 border border-[#272829]">
+              <div className="grid grid-cols-7 gap-2 mb-4">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+                  <div key={day} className="text-center text-xs text-[#9aa0a6] py-2">{day}</div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                {calendarEvents.map(event => (
+                  <div key={event.id} className="flex items-center gap-3 p-3 bg-[#0f1113] rounded-xl border-l-4" style={{ borderColor: event.color }}>
+                    <span className="text-sm font-medium text-white">{event.time}</span>
+                    <span className="text-sm text-[#9aa0a6]">{event.title}</span>
+                    {event.is_recurring && <span className="text-xs text-[#7c3aed]">🔄</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {view === "memory" && (
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-white mb-4">🧠 Memory</h2>
+            <div className="space-y-3">
+              {memories.map(memory => (
+                <div key={memory.id} className="bg-[#16181a] rounded-2xl p-4 border border-[#272829]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs px-2 py-1 rounded-lg bg-[#7c3aed]/20 text-[#7c3aed]">{memory.memory_type}</span>
+                    <span className="text-xs text-[#9aa0a6]">{new Date(memory.timestamp).toLocaleDateString()}</span>
+                  </div>
+                  <h3 className="font-medium text-white">{memory.title}</h3>
+                  <p className="text-sm text-[#9aa0a6] mt-1">{memory.content}</p>
+                </div>
+              ))}
+              {memories.length === 0 && (
+                <p className="text-[#9aa0a6] text-center py-8">No memories yet</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {view === "team" && (
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-white mb-4">👥 Team</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {teamMembers.map(member => (
+                <div key={member.id} className="bg-[#16181a] rounded-2xl p-4 border border-[#272829]">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style={{ backgroundColor: member.color + "20" }}>
+                      {member.avatar}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-white">{member.name}</h3>
+                      <p className="text-xs text-[#9aa0a6]">{member.role}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-[#9aa0a6]">{member.description}</p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {Array.isArray(member.skills) && member.skills.map((skill, i) => (
+                      <span key={i} className="text-xs px-2 py-1 rounded-lg bg-[#272829] text-[#9aa0a6]">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {view === "office" && (
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-white mb-4">🏢 Office</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {["desk", "meeting", "lobby"].map(zone => (
+                <div key={zone} className="bg-[#16181a] rounded-2xl p-4 border border-[#272829]">
+                  <h3 className="font-medium text-white mb-3 capitalize">{zone}</h3>
+                  <div className="space-y-2">
+                    {officeAgents.filter(a => a.zone === zone).map(agent => (
+                      <div key={agent.id} className="flex items-center gap-2 p-2 bg-[#0f1113] rounded-xl">
+                        <span className="text-xl">{agent.avatar}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white truncate">{agent.name}</p>
+                          <p className="text-xs text-[#9aa0a6]">{agent.current_task}</p>
+                        </div>
+                        <div className="text-xs px-2 py-1 rounded-lg" style={{ 
+                          backgroundColor: agent.agent_state === "executing" ? "#10b98120" : agent.agent_state === "idle" ? "#272829" : "#f59e0b20",
+                          color: agent.agent_state === "executing" ? "#10b981" : agent.agent_state === "idle" ? "#9aa0a6" : "#f59e0b"
+                        }}>
+                          {agent.task_progress}%
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {view === "content" && <div className="p-6 text-[#9aa0a6]">🎬 Content Pipeline - Coming soon</div>}
         {view === "calendar" && <div className="p-6 text-[#9aa0a6]">📅 Calendar - Coming soon</div>}
         {view === "memory" && <div className="p-6 text-[#9aa0a6]">🧠 Memory - Coming soon</div>}
