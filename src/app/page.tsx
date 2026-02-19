@@ -146,6 +146,7 @@ export default function TaskBoard() {
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
   const [linkedDocs, setLinkedDocs] = useState<Record<string, string[]>>({});
   const [pendingDoc, setPendingDoc] = useState<string | null>(null);
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [showDocsModal, setShowDocsModal] = useState<string | null>(null);
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office">("tasks");
@@ -347,7 +348,7 @@ export default function TaskBoard() {
                     </h2>
                     <div className="space-y-2 md:space-y-3">
                       {tasksByStatus(status).map(task => (
-                        <div key={task.id} className={`rounded-2xl border p-3 ${statusColors[status]} hover:border-[#7c3aed]/50 cursor-pointer`} onClick={() => task.notes && alert(`📝 ${task.notes}`)}>
+                        <div key={task.id} className={`rounded-2xl border p-3 ${statusColors[status]} hover:border-[#7c3aed/50 cursor-pointer`} onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}>
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-start gap-2">
                               {task.priority === "high" && <span className="text-red-400 text-xs">🔴</span>}
@@ -361,8 +362,23 @@ export default function TaskBoard() {
                           {(linkedDocs[task.id] || []).length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-2">
                               {(linkedDocs[task.id] || []).map((doc, i) => (
-                                <span key={i} className="text-xs px-2 py-1 rounded-lg bg-orange-500/20 text-orange-400">📎 {doc}</span>
+                                <a 
+                                  key={i} 
+                                  href={`https://cvofvffeabstndbuzwjc.supabase.co/storage/v1/object/public/documents/${doc}`}
+                                  target="_blank"
+                                  className="text-xs px-2 py-1 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500/30"
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  📎 {doc}
+                                </a>
                               ))}
+                            </div>
+                          )}
+                          {expandedTask === task.id && (
+                            <div className="mt-2 p-2 bg-[#0f1113] rounded-xl text-xs space-y-2" onClick={e => e.stopPropagation()}>
+                              {task.description && <div><span className="text-[#9aa0a6]">Descripción:</span><p className="text-white">{task.description}</p></div>}
+                              {task.notes && <div><span className="text-[#7c3aed]">Notas:</span><p className="text-white">{task.notes}</p></div>}
+                              <button onClick={() => setExpandedTask(null)} className="text-[#9aa0a6] hover:text-white">✕ Cerrar</button>
                             </div>
                           )}
                           <div className="flex flex-wrap gap-1.5">
