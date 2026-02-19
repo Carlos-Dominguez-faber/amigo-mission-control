@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import AnimatedAvatar, { AvatarState } from "@/components/AnimatedAvatar";
+import { useRouter } from "next/navigation";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 type Assignee = "carlos" | "amigo";
@@ -18,6 +19,35 @@ interface Task {
   created_at: number;
   updated_at: number;
 }
+
+export default function Home() {
+  const router = useRouter();
+  const [view, setView] = useState("tasks");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+      } else {
+        setIsAuthenticated(true);
+      }
+      setLoading(false);
+    };
+    checkAuth();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0b0c0e] flex items-center justify-center">
+        <div className="text-orange-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
 
 // Task hook with Supabase
 function useTasks() {
@@ -130,7 +160,7 @@ function detectAvatarState(tasks: Task[]): AvatarState {
   return "thinking";
 }
 
-export default function TaskBoard() {
+function TaskBoard() {
   const { tasks, isLoaded, isOnline, addTask, updateTaskStatus, updateTaskAssignee, updateTaskPriority, deleteTask } = useTasks();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
