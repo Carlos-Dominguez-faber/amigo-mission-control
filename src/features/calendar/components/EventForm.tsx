@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { CalendarEvent } from "@/features/calendar/types";
+import { LinkedDocsSection } from "@/shared/components/LinkedDocsSection";
 
 interface EventFormProps {
   defaultValues?: Partial<CalendarEvent>;
@@ -158,6 +159,11 @@ export function EventForm({ defaultValues, onSubmit, submitLabel }: EventFormPro
           </select>
         )}
       </div>
+
+      {/* Attachments (edit mode only) */}
+      {defaultValues?.id && (
+        <LinkedDocsSection linkedType="calendar" linkedId={defaultValues.id} label="Resources" />
+      )}
 
       {/* Submit */}
       <button

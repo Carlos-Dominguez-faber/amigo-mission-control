@@ -136,6 +136,43 @@ export async function renameDocument(id: string, name: string): Promise<void> {
   if (error) throw error;
 }
 
+// ── Linking ──────────────────────────────────────────────
+
+export async function uploadAndLinkDocument(
+  file: File,
+  linkedType: string,
+  linkedId: string
+): Promise<Document> {
+  const doc = await uploadDocument(file, null, "user");
+
+  const { error } = await supabase
+    .from("documents")
+    .update({ linked_type: linkedType, linked_id: linkedId })
+    .eq("id", doc.id);
+
+  if (error) throw error;
+  return { ...doc, linked_type: linkedType, linked_id: linkedId } as Document;
+}
+
+export async function fetchLinkedDocuments(
+  linkedType: string,
+  linkedId: string
+): Promise<Document[]> {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("linked_type", linkedType)
+    .eq("linked_id", linkedId)
+    .order("uploaded_at", { ascending: false });
+
+  if (error) throw error;
+  return (data as Document[]) ?? [];
+}
+
+export async function unlinkAndDeleteDocument(doc: Document): Promise<void> {
+  await deleteDocument(doc);
+}
+
 // ── Breadcrumb helper ────────────────────────────────────
 
 export async function fetchFolderAncestors(

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ContentItem, ContentStage, ContentPlatform } from "@/features/content/types";
 import { User, Bot } from "lucide-react";
+import { LinkedDocsSection } from "@/shared/components/LinkedDocsSection";
 
 interface ContentFormProps {
   defaultValues?: Partial<ContentItem>;
@@ -153,6 +154,11 @@ export function ContentForm({ defaultValues, onSubmit, submitLabel }: ContentFor
           className="w-full bg-[#0f1113] border border-[#272829] text-white text-sm rounded-lg px-3 py-2.5 resize-y placeholder:text-[#9aa0a6]/50 focus:outline-none focus:border-[#7c3aed] transition-colors"
         />
       </div>
+
+      {/* Attachments (edit mode only) */}
+      {defaultValues?.id && (
+        <LinkedDocsSection linkedType="content" linkedId={defaultValues.id} />
+      )}
 
       {/* Submit */}
       <button
