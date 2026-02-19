@@ -275,9 +275,17 @@ export default function TaskBoard() {
                   <label className="flex items-center gap-2 px-3 py-2 bg-[#16181a] border border-[#272829] rounded-xl text-sm text-[#9aa0a6] cursor-pointer hover:border-[#7c3aed]/50">
                     <span>📎</span>
                     <span className="text-xs">Adjuntar documento</span>
-                    <input type="file" className="hidden" disabled title="Storage pendiente de configurar" />
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          alert(`📎 Archivo seleccionado: ${file.name}\n\n(Upload coming soon - Storage bucket needed)`);
+                        }
+                      }} 
+                    />
                   </label>
-                  <span className="text-xs text-[#6b7280]">(próximamente)</span>
                 </div>
               </div>
             </form>
