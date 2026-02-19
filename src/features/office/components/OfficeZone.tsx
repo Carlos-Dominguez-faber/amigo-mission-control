@@ -85,7 +85,7 @@ export function OfficeZone({ zoneId, agents, onAgentClick }: OfficeZoneProps) {
 
   return (
     <div
-      className={`${config.bgClass} relative flex flex-col p-3 overflow-hidden min-h-[140px]`}
+      className={`${config.bgClass} relative flex flex-col p-4 overflow-hidden min-h-[200px]`}
     >
       {/* Zone label */}
       <div className="flex items-center gap-1.5 mb-3">
@@ -102,7 +102,7 @@ export function OfficeZone({ zoneId, agents, onAgentClick }: OfficeZoneProps) {
       <Furniture />
 
       {/* Agents */}
-      <div className="flex flex-wrap gap-4 justify-center items-end flex-1">
+      <div className="flex flex-wrap gap-8 justify-center items-end flex-1 pt-2">
         {agents.map((agent) => (
           <AgentSprite
             key={agent.id}

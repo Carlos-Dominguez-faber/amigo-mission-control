@@ -19,7 +19,7 @@ export function AgentSprite({ agent, onClick }: AgentSpriteProps) {
   return (
     <div
       className="relative flex flex-col items-center cursor-pointer group"
-      style={{ width: 64 }}
+      style={{ width: 76 }}
       onClick={onClick}
     >
       {/* Speech bubble */}

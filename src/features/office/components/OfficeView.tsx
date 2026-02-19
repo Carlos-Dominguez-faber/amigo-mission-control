@@ -38,7 +38,7 @@ export function OfficeView({ agents, onAgentClick }: OfficeViewProps) {
     >
       {/* Desktop: 2-column grid layout */}
       <div
-        className="hidden md:grid min-h-[420px]"
+        className="hidden md:grid min-h-[560px]"
         style={{
           gridTemplateAreas: `"workspace warroom" "workspace lounge"`,
           gridTemplateColumns: "1.8fr 1fr",
