@@ -92,11 +92,19 @@ export default function TaskBoard() {
         },
         {
           id: `task-${now + 1}`,
-          title: "Configurar Convex para Mission Control (local)",
+          title: "Crear proyecto Supabase + obtener keys",
           status: "todo",
           assignee: "carlos",
           createdAt: now + 1,
           updatedAt: now + 1,
+        },
+        {
+          id: `task-${now + 2}`,
+          title: "Configurar Supabase en Mission Control",
+          status: "todo",
+          assignee: "amigo",
+          createdAt: now + 2,
+          updatedAt: now + 2,
         },
       ];
       setTasks(defaultTasks);
