@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AnimatedAvatar from "@/components/AnimatedAvatar";
+import AnimatedAvatar, { AvatarState } from "@/components/AnimatedAvatar";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 type Assignee = "carlos" | "amigo";
@@ -15,8 +15,6 @@ interface Task {
   createdAt: number;
   updatedAt: number;
 }
-
-type AvatarState = "working" | "thinking" | "resting";
 
 const statusLabels: Record<TaskStatus, string> = {
   "todo": "To Do",
@@ -32,6 +30,32 @@ const statusColors: Record<TaskStatus, string> = {
 
 const STORAGE_KEY = "amigo-mission-control-tasks";
 
+// Auto-detect avatar state based on tasks
+function detectAvatarState(tasks: Task[]): AvatarState {
+  const now = Date.now();
+  const fiveMinutesAgo = now - 5 * 60 * 1000;
+  
+  // Check if Amigo has any in-progress tasks worked on recently
+  const amigoActiveTasks = tasks.filter(
+    t => t.assignee === "amigo" && 
+    (t.status === "in-progress" || t.status === "todo") &&
+    t.updatedAt > fiveMinutesAgo
+  );
+  
+  if (amigoActiveTasks.length > 0) {
+    return "working";
+  }
+  
+  // Check if there are any pending tasks for anyone
+  const pendingTasks = tasks.filter(t => t.status !== "done");
+  if (pendingTasks.length === 0) {
+    return "resting";
+  }
+  
+  // If there are tasks but Amigo isn't working on them actively
+  return "thinking";
+}
+
 export default function TaskBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
@@ -39,6 +63,7 @@ export default function TaskBoard() {
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Load from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -51,9 +76,12 @@ export default function TaskBoard() {
     setIsLoaded(true);
   }, []);
 
+  // Save to localStorage and auto-detect avatar state
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      // Auto-detect state
+      setAvatarState(detectAvatarState(tasks));
     }
   }, [tasks, isLoaded]);
 
@@ -113,34 +141,10 @@ export default function TaskBoard() {
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
           <div className="flex items-center gap-4">
             <AnimatedAvatar state={avatarState} size="md" />
-            <div className="flex gap-2">
-              <button
-                onClick={() => setAvatarState("working")}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
-                  avatarState === "working" ? "bg-orange-500" : "bg-zinc-800 hover:bg-zinc-700"
-                }`}
-                title="Working"
-              >
-                ⚡
-              </button>
-              <button
-                onClick={() => setAvatarState("thinking")}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
-                  avatarState === "thinking" ? "bg-yellow-500" : "bg-zinc-800 hover:bg-zinc-700"
-                }`}
-                title="Thinking"
-              >
-                🤔
-              </button>
-              <button
-                onClick={() => setAvatarState("resting")}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${
-                  avatarState === "resting" ? "bg-zinc-600" : "bg-zinc-800 hover:bg-zinc-700"
-                }`}
-                title="Resting"
-              >
-                💤
-              </button>
+            <div className="text-xs text-zinc-500 hidden md:block">
+              {avatarState === "working" && "🔄 Auto-working on tasks"}
+              {avatarState === "thinking" && "💭 Waiting for tasks"}
+              {avatarState === "resting" && "😴 No active tasks"}
             </div>
           </div>
           <span className="text-xs text-zinc-500">📱 Local Storage</span>
@@ -176,7 +180,7 @@ export default function TaskBoard() {
           </div>
         </form>
 
-        {/* Kanban Board - Mobile: vertical stack, Desktop: horizontal */}
+        {/* Kanban Board */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {(["todo", "in-progress", "done"] as TaskStatus[]).map((status) => (
             <div
