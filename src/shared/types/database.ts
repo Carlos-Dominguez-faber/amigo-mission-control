@@ -111,3 +111,32 @@ export interface TaskDocument {
   size_bytes: number;
   created_at: string;
 }
+
+// Cortex
+export type SourceType = "text" | "link" | "image" | "voice" | "file";
+export type CortexStatus = "unread" | "read" | "implemented";
+export type CortexAiStatus = "idle" | "processing" | "done" | "failed";
+export type CortexCategory =
+  | "vibe-coding"
+  | "openclaw"
+  | "prompts"
+  | "nanobanana"
+  | "resources"
+  | "ideas";
+
+export interface CortexItem {
+  id: string;
+  title: string;
+  source_type: SourceType;
+  raw_content: string | null;
+  file_url: string | null;
+  file_path: string | null;
+  file_type: string | null;
+  ai_summary: string | null;
+  ai_category: CortexCategory | null;
+  ai_status: CortexAiStatus;
+  status: CortexStatus;
+  is_sent_to_agent: boolean;
+  created_at: string;
+  processed_at: string | null;
+}

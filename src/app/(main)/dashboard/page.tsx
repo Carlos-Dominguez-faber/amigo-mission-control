@@ -10,6 +10,7 @@ import MemoryBoard from "@/features/memory/components/MemoryBoard";
 import TeamBoard from "@/features/team/components/TeamBoard";
 import OfficeBoard from "@/features/office/components/OfficeBoard";
 import DocsBoard from "@/features/documents/components/DocsBoard";
+import CortexBoard from "@/features/cortex/components/CortexBoard";
 import { DocumentPreviewModal } from "@/shared/components/DocumentPreviewModal";
 import type { AvatarState } from "@/shared/components/AnimatedAvatar";
 import { useTasks } from "@/features/tasks/hooks/useTasks";
@@ -67,6 +68,8 @@ export default function DashboardPage() {
         {activeTab === "office" && <OfficeBoard />}
 
         {activeTab === "docs" && <DocsBoard />}
+
+        {activeTab === "cortex" && <CortexBoard />}
       </main>
 
       {previewDoc && (

@@ -8,9 +8,10 @@ import {
   Users,
   Building2,
   FolderOpen,
+  Zap,
 } from "lucide-react";
 
-export type TabId = "tasks" | "content" | "calendar" | "memory" | "team" | "office" | "docs";
+export type TabId = "tasks" | "content" | "calendar" | "memory" | "team" | "office" | "docs" | "cortex";
 
 interface NavigationTabsProps {
   activeTab: TabId;
@@ -31,6 +32,7 @@ const TABS: TabConfig[] = [
   { id: "team", label: "Team", Icon: Users },
   { id: "office", label: "Office", Icon: Building2 },
   { id: "docs", label: "Docs", Icon: FolderOpen },
+  { id: "cortex", label: "Cortex", Icon: Zap },
 ];
 
 export function NavigationTabs({ activeTab, onTabChange }: NavigationTabsProps) {
