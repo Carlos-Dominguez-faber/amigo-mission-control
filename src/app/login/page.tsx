@@ -79,7 +79,8 @@ export default function LoginPage() {
 
       {/* Title */}
       <h1 className="text-2xl font-bold text-white mb-2">Mission Control</h1>
-      <p className="text-[#9aa0a6] mb-8">Your AI-powered command center</p>
+      <p className="text-[#9aa0a6] mb-2">Your AI-powered command center</p>
+      <p className="text-xs text-[#6b7280] mb-8">Task • Content • Calendar • Memory • Team • Office</p>
 
       {/* Login Form */}
       <div className="w-full max-w-sm space-y-4">
