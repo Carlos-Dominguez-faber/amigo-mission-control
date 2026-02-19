@@ -81,16 +81,26 @@ export default function TaskBoard() {
     
     if (loadedTasks.length === 0) {
       const now = Date.now();
-      const defaultTask: Task = {
-        id: `task-${now}`,
-        title: "Investigar casos uso OpenClaw para creators",
-        status: "in-progress",
-        assignee: "amigo",
-        createdAt: now,
-        updatedAt: now,
-      };
-      setTasks([defaultTask]);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([defaultTask]));
+      const defaultTasks: Task[] = [
+        {
+          id: `task-${now}`,
+          title: "Investigar casos uso OpenClaw para creators",
+          status: "in-progress",
+          assignee: "amigo",
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: `task-${now + 1}`,
+          title: "Configurar Convex para Mission Control (local)",
+          status: "todo",
+          assignee: "carlos",
+          createdAt: now + 1,
+          updatedAt: now + 1,
+        },
+      ];
+      setTasks(defaultTasks);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultTasks));
     }
     
     setIsLoaded(true);
