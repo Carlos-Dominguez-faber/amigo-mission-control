@@ -19,8 +19,8 @@ export function DashboardHeader({ avatarState, isOnline }: DashboardHeaderProps)
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0b0c0e]/80 backdrop-blur-md border-b border-[#272829]">
-      <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 h-14">
+    <header className="sticky top-0 z-40 bg-[#0b0c0e]/80 backdrop-blur-md border-b border-[#272829] overflow-visible">
+      <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-2">
         {/* Left: avatar + title */}
         <div className="flex items-center gap-3">
           <AnimatedAvatar state={avatarState} size="sm" />

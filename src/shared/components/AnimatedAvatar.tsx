@@ -35,14 +35,20 @@ export default function AnimatedAvatar({ state = "resting", size = "md", classNa
   const config = stateConfig[state];
 
   const sizeClasses = {
-    sm: "w-16 h-16",
+    sm: "w-8 h-8",
     md: "w-24 h-24",
     lg: "w-32 h-32",
   };
 
+  const wrapperPadding = {
+    sm: "px-2 py-1 gap-2",
+    md: "px-4 py-2 gap-3",
+    lg: "px-4 py-2 gap-3",
+  };
+
   return (
-    <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-full ${config.bgColor} border ${config.borderColor} ${className}`}>
-      <div className={`${sizeClasses[size]} relative rounded-full overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600`}>
+    <div className={`inline-flex items-center ${wrapperPadding[size]} rounded-full ${config.bgColor} border ${config.borderColor} ${className}`}>
+      <div className={`${sizeClasses[size]} relative rounded-full overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 shrink-0`}>
         <div className="absolute inset-0 flex items-center justify-center">
           <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="10" y="15" width="80" height="70" rx="35" fill="#ff6b00" />
