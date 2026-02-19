@@ -1,12 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import type { FormEvent } from "react";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import AnimatedAvatar, { AvatarState } from "@/components/AnimatedAvatar";
 import { useRouter } from "next/navigation";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 type Assignee = "carlos" | "amigo";
+type Priority = "low" | "medium" | "high";
+type ViewKey = "tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office";
+
+interface TaskRow {
+  id: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  assignee: Assignee;
+  priority: Priority | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 interface Task {
   id: string;
@@ -14,7 +30,7 @@ interface Task {
   description?: string;
   status: TaskStatus;
   assignee: Assignee;
-  priority?: "low" | "medium" | "high";
+  priority?: Priority;
   notes?: string;
   created_at: number;
   updated_at: number;
@@ -36,15 +52,18 @@ function useTasks() {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        setTasks(data.map((t: any) => ({
+        setTasks((data as TaskRow[]).map((t) => ({
           ...t,
+          description: t.description ?? undefined,
+          notes: t.notes ?? undefined,
+          priority: t.priority ?? "medium",
           created_at: new Date(t.created_at).getTime(),
           updated_at: new Date(t.updated_at).getTime(),
         })));
         setIsOnline(true);
         console.log("📡 Loaded from Supabase:", data.length, "tasks");
       }
-    } catch (err) {
+    } catch {
       console.log("Using localStorage fallback for tasks");
       const stored = localStorage.getItem("amigo-tasks");
       if (stored) setTasks(JSON.parse(stored));
@@ -58,7 +77,7 @@ function useTasks() {
   const saveTasks = async (newTasks: Task[]) => {
     setTasks(newTasks);
     localStorage.setItem("amigo-tasks", JSON.stringify(newTasks));
-    
+
     if (isOnline && newTasks.length > 0) {
       try {
         await supabase.from("tasks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
@@ -79,12 +98,12 @@ function useTasks() {
     }
   };
 
-  const addTask = async (title: string, assignee: Assignee, priority: string, description?: string) => {
+  const addTask = async (title: string, assignee: Assignee, priority: Priority, description?: string) => {
     const now = Date.now();
     const newTask: Task = {
       id: `task-${now}`,
       title, description, status: "todo", assignee,
-      priority: priority as any, notes: "",
+      priority, notes: "",
       created_at: now, updated_at: now,
     };
     await saveTasks([...tasks, newTask]);
@@ -98,8 +117,8 @@ function useTasks() {
     await saveTasks(tasks.map(t => t.id === id ? { ...t, assignee, updated_at: Date.now() } : t));
   };
 
-  const updateTaskPriority = async (id: string, priority: string) => {
-    await saveTasks(tasks.map(t => t.id === id ? { ...t, priority: priority as any, updated_at: Date.now() } : t));
+  const updateTaskPriority = async (id: string, priority: Priority) => {
+    await saveTasks(tasks.map(t => t.id === id ? { ...t, priority, updated_at: Date.now() } : t));
   };
 
   const deleteTask = async (id: string) => {
@@ -139,21 +158,69 @@ export default function TaskBoard() {
   const { tasks, isLoaded, isOnline, addTask, updateTaskStatus, updateTaskAssignee, updateTaskPriority, deleteTask } = useTasks();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
-  const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
+  const [newTaskPriority, setNewTaskPriority] = useState<Priority>("medium");
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
-  const [linkedDocs, setLinkedDocs] = useState<Record<string, string[]>>({});
-  const [showDocsModal, setShowDocsModal] = useState<string | null>(null);
-  const [avatarState, setAvatarState] = useState<AvatarState>("resting");
-  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office">("tasks");
+  const [view, setView] = useState<ViewKey>("tasks");
+
+  const avatarState: AvatarState = useMemo(() => {
+    if (!isLoaded) return "resting";
+    return detectAvatarState(tasks);
+  }, [isLoaded, tasks]);
+
+  const compactTabs: ReadonlyArray<{ key: ViewKey; icon: string }> = [
+    { key: "tasks", icon: "📋" },
+    { key: "content", icon: "🎬" },
+    { key: "calendar", icon: "📅" },
+    { key: "memory", icon: "🧠" },
+    { key: "team", icon: "👥" },
+    { key: "office", icon: "🏢" },
+    { key: "docs", icon: "📁" },
+  ];
+
+  const fullTabs: ReadonlyArray<{ key: ViewKey; icon: string; label: string }> = [
+    { key: "tasks", icon: "📋", label: "Tasks" },
+    { key: "content", icon: "🎬", label: "Content" },
+    { key: "calendar", icon: "📅", label: "Calendar" },
+    { key: "memory", icon: "🧠", label: "Memory" },
+    { key: "team", icon: "👥", label: "Team" },
+    { key: "office", icon: "🏢", label: "Office" },
+    { key: "docs", icon: "📁", label: "Docs" },
+  ];
 
   useEffect(() => {
-    const token = localStorage.getItem("sb-access-token");
-    if (!token) {
-      router.push("/login");
-    } else {
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    let mounted = true;
+
+    const validateSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
+
+      const hasSession = Boolean(data.session);
+      setIsAuthenticated(hasSession);
+      setLoading(false);
+
+      if (!hasSession) {
+        router.replace("/login");
+      }
+    };
+
+    validateSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+      if (!mounted) return;
+      const hasSession = Boolean(session);
+      setIsAuthenticated(hasSession);
+
+      if (!hasSession) {
+        router.replace("/login");
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [router]);
 
   if (loading) {
@@ -166,13 +233,7 @@ export default function TaskBoard() {
 
   if (!isAuthenticated) return null;
 
-  useEffect(() => {
-    if (isLoaded) {
-      setAvatarState(detectAvatarState(tasks));
-    }
-  }, [tasks, isLoaded]);
-
-  const handleCreateTask = async (e: React.FormEvent) => {
+  const handleCreateTask = async (e: FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
     await addTask(newTaskTitle, newTaskAssignee, newTaskPriority, newTaskDescription);
@@ -188,11 +249,8 @@ export default function TaskBoard() {
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-12 bg-[#0f1113] flex items-center justify-between px-3 z-50 border-b border-[#272829]">
         <div className="flex gap-1 overflow-x-auto">
-          {[
-            { key: "tasks", icon: "📋" }, { key: "content", icon: "🎬" }, { key: "calendar", icon: "📅" },
-            { key: "memory", icon: "🧠" }, { key: "team", icon: "👥" }, { key: "office", icon: "🏢" }, { key: "docs", icon: "📁" }
-          ].map(tab => (
-            <button key={tab.key} onClick={() => setView(tab.key as any)} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === tab.key ? "bg-[#7c3aed]" : "bg-[#272829]"}`}>
+          {compactTabs.map(tab => (
+            <button key={tab.key} onClick={() => setView(tab.key)} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === tab.key ? "bg-[#7c3aed]" : "bg-[#272829]"}`}>
               {tab.icon}
             </button>
           ))}
@@ -206,11 +264,8 @@ export default function TaskBoard() {
       {/* Desktop Sidebar */}
       <div className="hidden md:fixed left-0 top-0 h-full w-16 bg-[#0f1113] flex flex-col items-center py-6 gap-4 z-50">
         <div className="w-10 h-10 rounded-xl bg-[#7c3aed] flex items-center justify-center text-lg font-bold">🤝</div>
-        {[
-          { key: "tasks", icon: "📋" }, { key: "content", icon: "🎬" }, { key: "calendar", icon: "📅" },
-          { key: "memory", icon: "🧠" }, { key: "team", icon: "👥" }, { key: "office", icon: "🏢" }, { key: "docs", icon: "📁" }
-        ].map(tab => (
-          <button key={tab.key} onClick={() => setView(tab.key as any)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${view === tab.key ? "bg-[#7c3aed]" : "hover:bg-[#272829]"}`} title={tab.key}>
+        {compactTabs.map(tab => (
+          <button key={tab.key} onClick={() => setView(tab.key)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${view === tab.key ? "bg-[#7c3aed]" : "hover:bg-[#272829]"}`} title={tab.key}>
             {tab.icon}
           </button>
         ))}
@@ -226,12 +281,8 @@ export default function TaskBoard() {
             </div>
           </div>
           <div className="hidden md:flex gap-1">
-            {[
-              { key: "tasks", icon: "📋", label: "Tasks" }, { key: "content", icon: "🎬", label: "Content" },
-              { key: "calendar", icon: "📅", label: "Calendar" }, { key: "memory", icon: "🧠", label: "Memory" },
-              { key: "team", icon: "👥", label: "Team" }, { key: "office", icon: "🏢", label: "Office" }, { key: "docs", icon: "📁", label: "Docs" }
-            ].map(tab => (
-              <button key={tab.key} onClick={() => setView(tab.key as any)} className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 ${view === tab.key ? "bg-[#7c3aed] text-white" : "bg-[#16181a] text-[#9aa0a6] hover:bg-[#272829]"}`}>
+            {fullTabs.map(tab => (
+              <button key={tab.key} onClick={() => setView(tab.key)} className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 ${view === tab.key ? "bg-[#7c3aed] text-white" : "bg-[#16181a] text-[#9aa0a6] hover:bg-[#272829]"}`}>
                 <span>{tab.icon}</span><span>{tab.label}</span>
               </button>
             ))}
@@ -248,7 +299,7 @@ export default function TaskBoard() {
               <div className="flex flex-col gap-2">
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <input type="text" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} placeholder="Nueva tarea..." className="flex-1 px-3 md:px-4 py-2 md:py-3 bg-[#16181a] border border-[#272829] rounded-xl focus:ring-2 focus:ring-[#7c3aed] text-white text-sm" />
-                  <select value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value as any)} className={`px-3 py-2 rounded-xl text-sm ${newTaskPriority === "high" ? "bg-red-500/20 text-red-400 border border-red-500/30" : newTaskPriority === "low" ? "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30" : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"}`}>
+                  <select value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value as Priority)} className={`px-3 py-2 rounded-xl text-sm ${newTaskPriority === "high" ? "bg-red-500/20 text-red-400 border border-red-500/30" : newTaskPriority === "low" ? "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30" : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"}`}>
                     <option value="low">🟢 Low</option><option value="medium">🟡 Medium</option><option value="high">🔴 High</option>
                   </select>
                   <select value={newTaskAssignee} onChange={e => setNewTaskAssignee(e.target.value as Assignee)} className="px-3 md:px-4 py-2 md:py-3 bg-[#16181a] border border-[#272829] rounded-xl text-white text-sm">
@@ -281,9 +332,9 @@ export default function TaskBoard() {
                             <button onClick={e => { e.stopPropagation(); deleteTask(task.id); }} className="text-[#9aa0a6] hover:text-red-500 text-xs">✕</button>
                           </div>
                           {task.description && <p className="text-xs text-[#9aa0a6] mb-2 line-clamp-1">{task.description}</p>}
-                          {task.notes && <p className="text-xs text-[#7c3aed] mb-2">📝 {task.notes.substring(0,20)}...</p>}
+                          {task.notes && <p className="text-xs text-[#7c3aed] mb-2">📝 {task.notes.substring(0, 20)}...</p>}
                           <div className="flex flex-wrap gap-1.5">
-                            <select value={task.priority || "medium"} onClick={e => e.stopPropagation()} onChange={e => updateTaskPriority(task.id, e.target.value)} className={`text-xs px-2 py-1 rounded-lg ${task.priority === "high" ? "bg-red-500/20 text-red-400" : task.priority === "low" ? "bg-zinc-500/20 text-zinc-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+                            <select value={task.priority || "medium"} onClick={e => e.stopPropagation()} onChange={e => updateTaskPriority(task.id, e.target.value as Priority)} className={`text-xs px-2 py-1 rounded-lg ${task.priority === "high" ? "bg-red-500/20 text-red-400" : task.priority === "low" ? "bg-zinc-500/20 text-zinc-400" : "bg-yellow-500/20 text-yellow-400"}`}>
                               <option value="low">🟢</option><option value="medium">🟡</option><option value="high">🔴</option>
                             </select>
                             <select value={task.status} onClick={e => e.stopPropagation()} onChange={e => updateTaskStatus(task.id, e.target.value as TaskStatus)} className="text-xs px-2 py-1 bg-[#0f1113] border border-[#272829] rounded-lg text-[#9aa0a6]">

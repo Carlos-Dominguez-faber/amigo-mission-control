@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-const SUPABASE_URL = "https://cvofvffeabstndbuzwjc.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2b2Z2ZmZlYWJzdG5kYnV6d2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MTA0NDgsImV4cCI6MjA4NzA4NjQ0OH0.aEeyaSMDKWuUeNTPRHguPhwrlXbB6yj5T2FdPwcdbSM";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,40 +12,49 @@ export default function LoginPage() {
   const [eyeState, setEyeState] = useState<"closed" | "open" | "blink">("open");
   const router = useRouter();
 
+  useEffect(() => {
+    let mounted = true;
+
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
+      if (data.session) {
+        router.replace("/");
+      }
+    };
+
+    checkSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
   const handleLogin = async () => {
     if (!email || !password) return;
-    
+
     setLoading(true);
     setError("");
     setEyeState("closed");
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-        },
-        body: JSON.stringify({ email, password }),
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error_description || data.msg || "Login failed");
+      if (signInError) {
+        throw signInError;
       }
-
-      // Store token
-      localStorage.setItem("sb-access-token", data.access_token);
-      localStorage.setItem("sb-refresh-token", data.refresh_token);
 
       setEyeState("open");
       setTimeout(() => setEyeState("blink"), 300);
       setTimeout(() => setEyeState("open"), 500);
-      
-      router.push("/");
-    } catch (err: any) {
-      setError(err.message);
+
+      router.replace("/");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Login failed";
+      setError(message);
       setEyeState("open");
     } finally {
       setLoading(false);

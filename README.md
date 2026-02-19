@@ -64,7 +64,7 @@ A powerful AI-powered command center for managing tasks, content, calendar, memo
 |-------|------------|
 | **Frontend** | Next.js 14, React, Tailwind CSS |
 | **Backend/DB** | Supabase (PostgreSQL) |
-| **Auth** | Supabase Auth (pending) |
+| **Auth** | Supabase Auth (email/password) |
 | **Storage** | Supabase Storage (pending bucket setup) |
 | **Deployment** | Vercel |
 | **State** | LocalStorage + Supabase sync |
@@ -131,6 +131,14 @@ Currently using hybrid approach:
 - Supabase as primary data store
 - LocalStorage as fallback
 - Sync on load and on save
+
+## 🔐 Auth Flow
+
+- Login route: `/login`
+- Sign in method: `supabase.auth.signInWithPassword()`
+- Session validation on app load via `supabase.auth.getSession()`
+- Auth state listener via `supabase.auth.onAuthStateChange()`
+- Unauthenticated users are redirected to `/login`
 
 ## 📱 Responsive
 
