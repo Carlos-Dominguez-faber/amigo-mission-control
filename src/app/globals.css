@@ -1,38 +1,6 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #000000;
-  --foreground: #ffffff;
-  --orange: #ff6b00;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #18181b;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #3f3f46;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
-}
+/*
+ * Personaliza tu tema aquí
+ * Documentación: https://tailwindcss.com/docs/theme
+ */

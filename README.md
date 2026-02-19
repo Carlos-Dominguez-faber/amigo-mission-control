@@ -1,249 +1,361 @@
-# 🤝 Amigo Mission Control
+# 🚀 Next.js + Claude Code - Frontend Setup
 
-A powerful AI-powered command center for managing tasks, content, calendar, memory, team, and office automation.
+Setup completo de Next.js 16 + Supabase + Claude Code listo para producción. Arquitectura Feature-First optimizada para desarrollo asistido por IA.
 
-![Mission Control](https://img.shields.io/badge/Version-1.0.0-orange)
-![Next.js](https://img.shields.io/badge/Next.js-14-black)
-![Supabase](https://img.shields.io/badge/Supabase-3FCF8E)
-![Vercel](https://img.shields.io/badge/Vercel-Deployed-000)
+## 🎯 ¿Qué es esto?
 
-## 🚀 Live URL
+Un template **production-ready** para aplicaciones frontend modernas con:
 
-**Production:** https://amigo-mission-control.vercel.app
+- ✅ Next.js 16 (App Router) + TypeScript
+- ✅ Supabase (Database + Auth)
+- ✅ Tailwind CSS + shadcn/ui
+- ✅ Claude Code con comandos, agentes y skills
+- ✅ Arquitectura Feature-First optimizada para IA
+- ✅ Auto port detection (3000-3006)
+- ✅ Testing, linting y type checking configurados
 
-## 📋 Features
+## 📦 Tech Stack
 
-### 1. Task Board (Kanban)
-- Create, edit, delete tasks
-- Priority levels (Low 🟢, Medium 🟡, High 🔴)
-- Assign to Carlos or Amigo
-- Add notes and descriptions
-- Status: To Do, In Progress, Done
-
-### 2. Content Pipeline
-- 6 stages: Ideas → Script → Thumbnail → Filming → Editing → Published
-- Platform support: YouTube, Instagram, TikTok, LinkedIn, Twitter
-- Full script editor per item
-- Assign to team members
-
-### 3. Calendar
-- Weekly view with scheduled tasks
-- Always Running tasks (persistent)
-- Color-coded events
-- Quick add/remove
-
-### 4. Memory
-- Searchable memory bank
-- Categories: Decision, Conversation, Learning, Daily
-- Grouped by time: Today, Yesterday, This Week, This Month, Older
-
-### 5. Team
-- Leadership layer (Carlos, Amigo)
-- Agent layer (Scout, Quill, Pixel, Echo)
-- Meta layer (Codex)
-- Each with skills and descriptions
-
-### 6. Office (v1.0)
-- 2D office layout with 3 zones:
-  - Desks (6 workstations)
-  - Meeting Room
-  - Lobby
-- Rich agent states: Planning, Executing, Waiting API, Waiting Human, Error, Review, Idle
-- Real-time status indicators
-- KPI bar: Active tasks, In Progress, Idle, Errors
-
-### 7. Document Repository
-- Upload MD, PDF, images
-- Preview in modal
-- Download capability
-- (Storage integration pending Supabase Storage bucket)
-
-## 🛠 Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | Next.js 14, React, Tailwind CSS |
-| **Backend/DB** | Supabase (PostgreSQL) |
-| **Auth** | Supabase Auth (email/password) |
-| **Storage** | Supabase Storage (pending bucket setup) |
-| **Deployment** | Vercel |
-| **State** | LocalStorage + Supabase sync |
-
-## 📁 Project Structure
-
-```
-amigo-mission-control/
-├── src/
-│   ├── app/
-│   │   ├── page.tsx          # Main app with all views
-│   │   ├── layout.tsx       # Root layout
-│   │   ├── globals.css       # Global styles
-│   │   └── login/
-│   │       └── page.tsx     # Login page with avatar
-│   ├── components/
-│   │   └── AnimatedAvatar.tsx # Interactive avatar
-│   └── lib/
-│       ├── supabase.ts      # Supabase client
-│       └── db.ts           # Database helpers
-├── supabase-schema.sql      # SQL for tables
-├── supabase-storage.sql     # SQL for storage bucket
-└── .env.local.example      # Environment variables
+```yaml
+Runtime: Node.js + TypeScript
+Framework: Next.js 16 (App Router)
+Database: PostgreSQL/Supabase
+Styling: Tailwind CSS
+State: Zustand
+Testing: Jest + React Testing Library
+Validation: Zod
+AI Tooling: Claude Code + MCPs
 ```
 
-## 🔧 Supabase Setup
+## 🏗️ Arquitectura Feature-First
 
-### Database Tables
-
-```sql
--- Run supabase-schema.sql in Supabase SQL Editor
-
-tasks
-documents
-content_items
-calendar_events
-memories
-team_members
-office_agents
+```
+src/
+├── app/                      # Next.js App Router
+│   ├── (auth)/              # Rutas auth (grupo)
+│   ├── (main)/              # Rutas principales
+│   ├── layout.tsx
+│   └── page.tsx
+│
+├── features/                 # 🎯 Organizadas por funcionalidad
+│   ├── auth/
+│   │   ├── components/      # LoginForm, SignupForm
+│   │   ├── hooks/           # useAuth, useSession
+│   │   ├── services/        # authService.ts
+│   │   ├── types/           # User, Session
+│   │   └── store/           # authStore.ts
+│   │
+│   ├── dashboard/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   └── types/
+│   │
+│   └── [tu-feature]/
+│
+└── shared/                   # Código reutilizable
+    ├── components/          # Button, Card, Input
+    ├── hooks/               # useDebounce, useLocalStorage
+    ├── stores/              # appStore.ts
+    ├── types/               # api.ts, domain.ts
+    ├── utils/               # helpers
+    ├── lib/                 # supabase.ts, axios.ts
+    └── constants/
 ```
 
-### Environment Variables
+> **¿Por qué Feature-First?** Cada feature tiene TODO lo necesario en un solo lugar. Perfecto para que la IA entienda contexto completo sin navegar múltiples carpetas.
 
-Create `.env.local`:
+## 🚀 Quick Start
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+### 1. Instalar Dependencias
+
+```bash
+npm install
+# o
+pnpm install
 ```
 
-## 🎨 Design System
+### 2. Configurar Variables de Entorno
 
-- **Background:** #0b0c0e (near black)
-- **Surface:** #16181a, #0f1113
-- **Primary:** #7c3aed (purple)
-- **Accent:** #ff6b00 (orange)
-- **Text:** #ffffff, #9aa0a6
-- **Border:** #272829
-- **Radius:** 16px (rounded-2xl)
+```bash
+# Crear .env.local
+cp .env.example .env.local
 
-## 🔄 Data Sync
+# Editar con tus credenciales de Supabase
+NEXT_PUBLIC_SUPABASE_URL=tu_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key
+```
 
-Currently using hybrid approach:
-- Supabase as primary data store
-- LocalStorage as fallback
-- Sync on load and on save
+### 3. Configurar MCPs (Opcional)
 
-## 🔐 Auth Flow
+Edita `.mcp.json` con tu project ref de Supabase:
 
-- Login route: `/login`
-- Sign in method: `supabase.auth.signInWithPassword()`
-- Session validation on app load via `supabase.auth.getSession()`
-- Auth state listener via `supabase.auth.onAuthStateChange()`
-- Unauthenticated users are redirected to `/login`
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "args": ["--project-ref=TU_PROJECT_REF"],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "TU_TOKEN"
+      }
+    }
+  }
+}
+```
 
-## 📱 Responsive
+### 4. Iniciar Desarrollo
 
-- Mobile: Bottom nav (icons only)
-- Desktop: Sidebar + top tabs
+```bash
+npm run dev
+# Auto-detecta puerto disponible (3000-3006)
+```
 
-## 🚦 Agent States (Office View)
+## 🛠️ Comandos Disponibles
 
-| State | Color | Icon |
-|-------|-------|------|
-| Planning | Blue | 📝 |
-| Executing | Green | ⚡ |
-| Waiting API | Yellow | ⏳ |
-| Waiting Human | Purple | 💬 |
-| Error | Red | ⚠️ |
-| Review | Cyan | 👀 |
-| Idle | Zinc | 💤 |
+### Development
+```bash
+npm run dev          # Servidor desarrollo (auto-port 3000-3006)
+npm run build        # Build para producción
+npm run start        # Servidor producción
+```
 
-## 🤖 Team Structure
+### Quality Assurance
+```bash
+npm run test         # Tests con Jest
+npm run test:watch   # Tests en modo watch
+npm run lint         # ESLint
+npm run lint:fix     # Fix automático
+npm run typecheck    # TypeScript check
+```
 
-### Leadership
-- **Carlos** - Founder & CEO
-- **Amigo** - Chief of Staff
+### Skills Management
+```bash
+# Crear nuevo skill
+python .claude/skills/skill-creator/scripts/init_skill.py my-skill
 
-### Agents
-- **Scout** - Research
-- **Quill** - Writer
-- **Pixel** - Designer
-- **Echo** - Outreach
-- **Codex** - Developer
+# Validar skill
+python .claude/skills/skill-creator/scripts/quick_validate.py ./my-skill
 
-## 📝 API Reference
+# Empaquetar skill
+python .claude/skills/skill-creator/scripts/package_skill.py ./my-skill
+```
 
-### Supabase Tables
+## 🤖 Claude Code Integration
+
+### Comandos Disponibles
+
+| Comando | Descripción |
+|---------|-------------|
+| `/explorador` | Explora codebase y arquitectura |
+| `/ejecutar-prp` | Ejecuta PRPs (features complejas) |
+| `/generar-prp` | Genera nuevo PRP |
+| `/preparar-paralelo` | Prepara tareas paralelas |
+| `/ejecutar-paralelo` | Ejecuta en paralelo |
+
+### Agentes Especializados
+
+1. **Codebase Analyst** - Analiza arquitectura y patrones
+2. **Gestor Documentación** - Mantiene docs actualizados
+
+### MCPs Configurados (El Cyborg)
+
+- 🧠 **Next.js DevTools** - Conectado a `/_next/mcp` para debug en tiempo real
+- 👁️ **Playwright** - Validación visual y testing automatizado
+- 🗄️ **Supabase** - Integración directa con DB y auth
+
+## 🎨 Bucle Agéntico con Playwright
+
+Este setup incluye integración con Playwright MCP para desarrollo visual:
+
+```
+1. Implementar componente
+2. Capturar screenshot automático
+3. Comparar vs requirements
+4. Iterar hasta pixel-perfect
+```
+
+Lee `.claude/prompts/bucle-agentico.md` para más detalles.
+
+## 📝 Crear tu Primera Feature
+
+### Opción 1: Manual
+
+```bash
+mkdir -p src/features/mi-feature/{components,hooks,services,types,store}
+```
+
+### Opción 2: Con PRP
+
+```bash
+# En Claude Code, ejecuta:
+/generar-prp
+
+# Describe tu feature, el agente generará:
+# - Estructura completa
+# - Componentes base
+# - Hooks necesarios
+# - Types + validaciones
+# - Tests
+```
+
+## 🔒 Supabase Setup
+
+### 1. Crear Proyecto en Supabase
+
+```bash
+# Visita: https://supabase.com/dashboard
+# Crea nuevo proyecto
+# Copia URL y Anon Key
+```
+
+### 2. Configurar Cliente
+
+El cliente ya está configurado en `src/shared/lib/supabase.ts`:
 
 ```typescript
-// Tasks
-{
-  id: uuid,
-  title: string,
-  description: text,
-  status: 'todo' | 'in-progress' | 'done',
-  assignee: 'carlos' | 'amigo',
-  priority: 'low' | 'medium' | 'high',
-  notes: text,
-  created_at: timestamp,
-  updated_at: timestamp
+import { createClient } from '@supabase/supabase-js'
+
+export const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+```
+
+### 3. Crear Migraciones
+
+```bash
+# Guardar migraciones en supabase/migrations/
+# Ejemplo: supabase/migrations/001_create_users.sql
+```
+
+## 🧪 Testing Strategy
+
+### Unit Tests
+
+```typescript
+// src/features/auth/hooks/useAuth.test.ts
+import { renderHook } from '@testing-library/react'
+import { useAuth } from './useAuth'
+
+test('should authenticate user', async () => {
+  const { result } = renderHook(() => useAuth())
+  await result.current.login('test@example.com', 'password')
+  expect(result.current.user).toBeDefined()
+})
+```
+
+### Run Tests
+
+```bash
+npm run test                    # Run all tests
+npm run test:watch              # Watch mode
+npm run test:coverage           # Coverage report
+```
+
+## 🎯 Best Practices
+
+### Component Structure
+
+```typescript
+// ✅ GOOD: Clear props, typed, documented
+interface ButtonProps {
+  children: React.ReactNode
+  variant?: 'primary' | 'secondary'
+  onClick: () => void
 }
 
-// Content Items
-{
-  id: uuid,
-  title: string,
-  description: text,
-  stage: 'idea' | 'script' | 'thumbnail' | 'filming' | 'editing' | 'published',
-  platform: 'youtube' | 'instagram' | 'tiktok' | 'linkedin' | 'twitter',
-  script: text,
-  assignee: 'carlos' | 'amigo',
-  created_at: timestamp
-}
-
-// Calendar Events
-{
-  id: uuid,
-  title: string,
-  time: string,
-  day_of_week: number (-1 = always),
-  color: string,
-  is_recurring: boolean,
-  interval_type: 'daily' | 'weekly' | 'monthly'
-}
-
-// Memories
-{
-  id: uuid,
-  title: string,
-  content: text,
-  memory_type: 'decision' | 'conversation' | 'learning' | 'daily',
-  timestamp: timestamp
-}
-
-// Office Agents
-{
-  id: string,
-  name: string,
-  role: string,
-  avatar: string,
-  agent_state: string,
-  current_task: text,
-  task_progress: number,
-  zone: 'desk' | 'meeting' | 'lobby',
-  channel: string,
-  last_activity: timestamp
+export function Button({ children, variant = 'primary', onClick }: ButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`btn btn-${variant}`}
+    >
+      {children}
+    </button>
+  )
 }
 ```
 
-## 🔜 Roadmap
+### Feature Organization
 
-- [ ] Supabase Auth integration
-- [ ] Supabase Storage for documents
-- [ ] Real-time subscriptions
-- [ ] Office time-travel
-- [ ] Agent replay
-- [ ] Global command panel
+```typescript
+// ✅ GOOD: Todo relacionado en un lugar
+src/features/auth/
+├── components/     # UI específicos de auth
+├── hooks/          # Lógica de auth
+├── services/       # API calls
+├── types/          # Types de auth
+└── store/          # Estado de auth
+```
 
-## 📄 License
+## 📚 Documentación
 
-MIT - Carlos Domínguez 2026
+- **CLAUDE.md** - System prompt completo (la fuente de verdad)
+- **.claude/prompts/** - Metodologías y patrones
+- **.claude/PRPs/prp-base.md** - Sistema de Blueprints
+- **.claude/skills/** - Skills reutilizables
+
+## 🚨 Troubleshooting
+
+### Puerto Ocupado (EADDRINUSE)
+
+```bash
+# El auto-port detection debería resolver esto
+# Si persiste:
+lsof -i :3000
+kill -9 <PID>
+
+# O usa el script directamente:
+node scripts/dev-server.js
+```
+
+### TypeScript Errors
+
+```bash
+npm run typecheck          # Verificar errores
+rm -rf .next               # Limpiar cache
+npm install                # Reinstalar deps
+```
+
+### Tests Failing
+
+```bash
+npm run test -- --clearCache    # Limpiar cache de Jest
+npm run test -- --verbose       # Ver detalles
+```
+
+## 🎯 Próximos Pasos
+
+1. **Lee CLAUDE.md** - Principios y convenciones completas
+2. **Configura Supabase** - Auth + Database
+3. **Crea tu primera feature** - Usa `/generar-prp`
+4. **Implementa autenticación** - Feature auth incluida
+5. **Deploy** - Vercel/Netlify ready
+
+## 🤝 Contribuir
+
+Este template está diseñado para ser extendido. Algunas ideas:
+
+- [ ] Añadir más features base (notifications, settings)
+- [ ] Crear más skills específicos
+- [ ] Mejorar PRPs templates
+- [ ] Añadir más tests de ejemplo
+
+## 📦 Deploy
+
+### Vercel (Recomendado)
+
+```bash
+npm install -g vercel
+vercel
+```
+
+### Configurar Variables de Entorno
+
+En tu dashboard de Vercel, añade:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+---
+
+**Next.js + Claude Code Setup v1.0** | Built with AI-first development in mind 🤖
