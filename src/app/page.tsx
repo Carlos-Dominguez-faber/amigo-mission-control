@@ -65,7 +65,7 @@ export default function TaskBoard() {
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory">("tasks");
+  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team">("tasks");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -235,6 +235,13 @@ export default function TaskBoard() {
             🧠
           </button>
           <button
+            onClick={() => setView("team")}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === "team" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            title="Team"
+          >
+            👥
+          </button>
+          <button
             onClick={() => setView("docs")}
             className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === "docs" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
             title="Docs"
@@ -300,6 +307,15 @@ export default function TaskBoard() {
           title="Memory"
         >
           🧠
+        </button>
+        <button
+          onClick={() => setView("team")}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            view === "team" ? "bg-[#7c3aed]" : "hover:bg-[#272829]"
+          }`}
+          title="Team"
+        >
+          👥
         </button>
       </div>
 
@@ -448,6 +464,8 @@ export default function TaskBoard() {
           <CalendarView />
         ) : view === "memory" ? (
           <MemoryView />
+        ) : view === "team" ? (
+          <TeamView />
         ) : (
           <ContentPipeline />
         )}
@@ -1523,6 +1541,225 @@ function MemoryView() {
             <p>Select a memory to view</p>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Team Types and Component
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  description: string;
+  skills: string[];
+  color: string;
+  colorHex: string;
+  layer: "lead" | "agent" | "meta";
+  avatar: string;
+}
+
+const teamMembers: TeamMember[] = [
+  {
+    id: "1",
+    name: "Carlos",
+    role: "Founder & CEO",
+    description: "Visionario, decisiones estratégicas y negocio",
+    skills: ["Strategy", "Business", "Sales"],
+    color: "blue",
+    colorHex: "#3b82f6",
+    layer: "lead",
+    avatar: "👤"
+  },
+  {
+    id: "2",
+    name: "Amigo",
+    role: "Chief of Staff",
+    description: "Tu mano derecha, coordina todo",
+    skills: ["Orchestration", "Clarity", "Delegation"],
+    color: "slate",
+    colorHex: "#64748b",
+    layer: "lead",
+    avatar: "🤝"
+  },
+  {
+    id: "3",
+    name: "Scout",
+    role: "Research Agent",
+    description: "Investiga temas, analiza información",
+    skills: ["Web Search", "Analysis", "Summaries"],
+    color: "teal",
+    colorHex: "#14b8a6",
+    layer: "agent",
+    avatar: "🔍"
+  },
+  {
+    id: "4",
+    name: "Quill",
+    role: "Content Writer",
+    description: "Escribe posts, guiones y copy",
+    skills: ["Writing", "Copy", "Scripts"],
+    color: "purple",
+    colorHex: "#8b5cf6",
+    layer: "agent",
+    avatar: "✍️"
+  },
+  {
+    id: "5",
+    name: "Pixel",
+    role: "Design Agent",
+    description: "Genera imágenes y assets visuales",
+    skills: ["Images", "Design", "Thumbnails"],
+    color: "pink",
+    colorHex: "#ec4899",
+    layer: "agent",
+    avatar: "🎨"
+  },
+  {
+    id: "6",
+    name: "Echo",
+    role: "Outreach Agent",
+    description: "Gestiona comunicación y seguimiento",
+    skills: ["Messages", "Outreach", "Follow-up"],
+    color: "cyan",
+    colorHex: "#06b6d4",
+    layer: "agent",
+    avatar: "📢"
+  },
+  {
+    id: "7",
+    name: "Codex",
+    role: "Developer Agent",
+    description: "Escribe código y construye features",
+    skills: ["Code", "Debug", "Deploy"],
+    color: "orange",
+    colorHex: "#f97316",
+    layer: "meta",
+    avatar: "⚙️"
+  },
+];
+
+function TeamView() {
+  const lead = teamMembers.filter(m => m.layer === "lead");
+  const agents = teamMembers.filter(m => m.layer === "agent");
+  const meta = teamMembers.filter(m => m.layer === "meta");
+
+  return (
+    <div className="p-4 md:p-6">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">Meet the Team</h1>
+        <p className="text-sm text-[#9aa0a6]">
+          6 agentes especializados, cada uno con un rol específico
+        </p>
+      </div>
+
+      {/* Lead Layer */}
+      <div className="mb-8">
+        <h2 className="text-xs font-medium text-[#9aa0a6] mb-4 uppercase tracking-wider text-center">Leadership</h2>
+        <div className="flex flex-wrap justify-center gap-4">
+          {lead.map(member => (
+            <div
+              key={member.id}
+              className="w-full md:w-64 bg-[#16181a] border-2 rounded-2xl p-4 hover:border-[#7c3aed]/50 transition-colors cursor-pointer"
+              style={{ borderColor: member.colorHex }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style={{ backgroundColor: member.colorHex + "20" }}>
+                  {member.avatar}
+                </div>
+                <div>
+                  <h3 className="font-bold">{member.name}</h3>
+                  <p className="text-xs" style={{ color: member.colorHex }}>{member.role}</p>
+                </div>
+              </div>
+              <p className="text-sm text-[#9aa0a6] mb-3">{member.description}</p>
+              <div className="flex flex-wrap gap-1">
+                {member.skills.map(skill => (
+                  <span key={skill} className="text-xs px-2 py-0.5 rounded bg-[#0f1113] text-[#9aa0a6]">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Input/Output Labels */}
+      <div className="flex items-center justify-center gap-4 mb-4 text-xs text-[#9aa0a6]">
+        <span>INPUT SIGNAL →</span>
+        <span>← OUTPUT ACTION</span>
+      </div>
+
+      {/* Agent Layer */}
+      <div className="mb-8">
+        <div className="flex flex-wrap justify-center gap-4">
+          {agents.map(member => (
+            <div
+              key={member.id}
+              className="w-full md:w-48 bg-[#16181a] border-2 rounded-2xl p-4 hover:border-[#7c3aed]/50 transition-colors cursor-pointer"
+              style={{ borderColor: member.colorHex }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{ backgroundColor: member.colorHex + "20" }}>
+                  {member.avatar}
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">{member.name}</h3>
+                  <p className="text-xs" style={{ color: member.colorHex }}>{member.role}</p>
+                </div>
+              </div>
+              <p className="text-xs text-[#9aa0a6] mb-2">{member.description}</p>
+              <div className="flex flex-wrap gap-1">
+                {member.skills.map(skill => (
+                  <span key={skill} className="text-xs px-1.5 py-0.5 rounded bg-[#0f1113] text-[#9aa0a6]">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Meta Layer */}
+      <div className="mb-8">
+        <h2 className="text-xs font-medium text-[#9aa0a6] mb-4 uppercase tracking-wider text-center">Meta Layer</h2>
+        <div className="flex flex-wrap justify-center gap-4">
+          {meta.map(member => (
+            <div
+              key={member.id}
+              className="w-full md:w-64 bg-[#16181a] border-2 rounded-2xl p-4 hover:border-[#7c3aed]/50 transition-colors cursor-pointer"
+              style={{ borderColor: member.colorHex }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl" style={{ backgroundColor: member.colorHex + "20" }}>
+                  {member.avatar}
+                </div>
+                <div>
+                  <h3 className="font-bold">{member.name}</h3>
+                  <p className="text-xs" style={{ color: member.colorHex }}>{member.role}</p>
+                </div>
+              </div>
+              <p className="text-sm text-[#9aa0a6] mb-3">{member.description}</p>
+              <div className="flex flex-wrap gap-1">
+                {member.skills.map(skill => (
+                  <span key={skill} className="text-xs px-2 py-0.5 rounded bg-[#0f1113] text-[#9aa0a6]">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Add Team Member */}
+      <div className="text-center">
+        <button className="px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl text-sm font-medium">
+          + Agregar Agente
+        </button>
       </div>
     </div>
   );
