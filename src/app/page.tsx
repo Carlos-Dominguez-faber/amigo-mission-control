@@ -65,7 +65,7 @@ export default function TaskBoard() {
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [view, setView] = useState<"tasks" | "docs">("tasks");
+  const [view, setView] = useState<"tasks" | "docs" | "content">("tasks");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -94,6 +94,14 @@ export default function TaskBoard() {
             createdAt: now + 2,
             updatedAt: now + 2,
           });
+        }
+        
+        // Mark OpenClaw research as done
+        const hasResearchDone = loadedTasks.some((t: Task) => t.title.includes("OpenClaw") && t.status === "done");
+        if (!hasResearchDone) {
+          loadedTasks = loadedTasks.map((t: Task) => 
+            t.title.includes("OpenClaw") ? { ...t, status: "done" as TaskStatus, updatedAt: Date.now() } : t
+          );
         }
         
         setTasks(loadedTasks);
@@ -214,6 +222,12 @@ export default function TaskBoard() {
           >
             📁
           </button>
+          <button
+            onClick={() => setView("content")}
+            className={`px-3 py-1.5 rounded-lg text-xs ${view === "content" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+          >
+            🎬
+          </button>
         </div>
       </div>
 
@@ -239,6 +253,15 @@ export default function TaskBoard() {
           title="Documents"
         >
           📁
+        </button>
+        <button
+          onClick={() => setView("content")}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            view === "content" ? "bg-[#7c3aed]" : "hover:bg-[#272829]"
+          }`}
+          title="Content Pipeline"
+        >
+          🎬
         </button>
       </div>
 
@@ -381,8 +404,10 @@ export default function TaskBoard() {
               </div>
             </div>
           </>
-        ) : (
+        ) : view === "docs" ? (
           <DocumentRepository />
+        ) : (
+          <ContentPipeline />
         )}
       </div>
     </div>
@@ -591,6 +616,335 @@ function DocumentRepository() {
                   <p className="text-sm">Descarga el archivo para verlo</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Content Pipeline Types
+type ContentStage = "idea" | "script" | "thumbnail" | "filming" | "editing" | "published";
+type Platform = "youtube" | "instagram" | "tiktok" | "linkedin" | "twitter";
+
+interface ContentItem {
+  id: string;
+  title: string;
+  description?: string;
+  stage: ContentStage;
+  platform: Platform;
+  assignee: Assignee;
+  script?: string;
+  imageUrl?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+const CONTENT_KEY = "amigo-mission-control-content";
+
+const stageConfig: Record<ContentStage, { label: string; color: string; bgColor: string }> = {
+  idea: { label: "Ideas", color: "text-yellow-500", bgColor: "bg-yellow-500" },
+  script: { label: "Scripting", color: "text-blue-500", bgColor: "bg-blue-500" },
+  thumbnail: { label: "Thumbnail", color: "text-purple-500", bgColor: "bg-purple-500" },
+  filming: { label: "Filming", color: "text-pink-500", bgColor: "bg-pink-500" },
+  editing: { label: "Editing", color: "text-orange-500", bgColor: "bg-orange-500" },
+  published: { label: "Published", color: "text-green-500", bgColor: "bg-green-500" },
+};
+
+const platformIcons: Record<Platform, string> = {
+  youtube: "▶️",
+  instagram: "📸",
+  tiktok: "🎵",
+  linkedin: "💼",
+  twitter: "🐦",
+};
+
+function ContentPipeline() {
+  const [items, setItems] = useState<ContentItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
+  const [newItem, setNewItem] = useState({ title: "", description: "", platform: "youtube" as Platform });
+
+  useEffect(() => {
+    const stored = localStorage.getItem(CONTENT_KEY);
+    if (stored) {
+      try {
+        setItems(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse content", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem(CONTENT_KEY, JSON.stringify(items));
+    }
+  }, [items, isLoaded]);
+
+  const addItem = () => {
+    if (!newItem.title.trim()) return;
+    const now = Date.now();
+    const item: ContentItem = {
+      id: `content-${now}`,
+      title: newItem.title,
+      description: newItem.description,
+      stage: "idea",
+      platform: newItem.platform,
+      assignee: "carlos",
+      createdAt: now,
+      updatedAt: now,
+    };
+    setItems([...items, item]);
+    setNewItem({ title: "", description: "", platform: "youtube" });
+    setShowAddModal(false);
+  };
+
+  const moveItem = (itemId: string, newStage: ContentStage) => {
+    setItems(items.map(item => 
+      item.id === itemId ? { ...item, stage: newStage, updatedAt: Date.now() } : item
+    ));
+  };
+
+  const updateItem = (itemId: string, updates: Partial<ContentItem>) => {
+    setItems(items.map(item => 
+      item.id === itemId ? { ...item, ...updates, updatedAt: Date.now() } : item
+    ));
+  };
+
+  const deleteItem = (itemId: string) => {
+    setItems(items.filter(item => item.id !== itemId));
+  };
+
+  const itemsByStage = (stage: ContentStage) => items.filter(item => item.stage === stage);
+
+  const stageOrder: ContentStage[] = ["idea", "script", "thumbnail", "filming", "editing", "published"];
+
+  if (!isLoaded) return null;
+
+  return (
+    <div className="p-4 md:p-6">
+      {/* Summary Tiles */}
+      <div className="flex gap-2 md:gap-4 mb-6 overflow-x-auto pb-2">
+        {stageOrder.map(stage => (
+          <div
+            key={stage}
+            className="flex-shrink-0 px-3 md:px-4 py-2 bg-[#16181a] border border-[#272829] rounded-xl"
+          >
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${stageConfig[stage].bgColor}`} />
+              <span className="text-xs text-[#9aa0a6]">{stageConfig[stage].label}</span>
+            </div>
+            <p className={`text-lg md:text-xl font-bold ${stageConfig[stage].color}`}>
+              {itemsByStage(stage).length}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Add Button */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        className="mb-4 px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl text-sm font-medium"
+      >
+        + Nueva Idea
+      </button>
+
+      {/* Kanban Columns */}
+      <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4">
+        {stageOrder.map(stage => (
+          <div key={stage} className="flex-shrink-0 w-[280px] md:w-[300px]">
+            <div className="flex items-center justify-between mb-3 px-2">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${stageConfig[stage].bgColor}`} />
+                <span className="text-sm font-medium">{stageConfig[stage].label}</span>
+              </div>
+              <span className="text-xs text-[#9aa0a6]">{itemsByStage(stage).length}</span>
+            </div>
+            
+            <div className="space-y-2 min-h-[200px] bg-[#0f1113]/50 rounded-xl p-2">
+              {itemsByStage(stage).map(item => (
+                <div
+                  key={item.id}
+                  className="bg-[#16181a] border border-[#272829] rounded-xl p-3 hover:border-[#7c3aed]/50 transition-colors cursor-pointer"
+                  onClick={() => setEditingItem(item)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-medium text-sm pr-2 line-clamp-2">{item.title}</p>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
+                      className="text-[#9aa0a6] hover:text-red-500 text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {item.description && (
+                    <p className="text-xs text-[#9aa0a6] mb-2 line-clamp-2">{item.description}</p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-0.5 bg-[#0f1113] rounded">
+                      {platformIcons[item.platform]} {item.platform}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      item.assignee === "carlos" 
+                        ? "bg-[#7c3aed]/20 text-[#7c3aed]" 
+                        : "bg-[#10b981]/20 text-[#10b981]"
+                    }`}>
+                      {item.assignee === "carlos" ? "👤" : "🤖"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              
+              {itemsByStage(stage).length === 0 && (
+                <p className="text-[#9aa0a6] text-xs text-center py-8">No items</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+          <div className="bg-[#16181a] rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-4">Nueva Idea</h3>
+            <input
+              type="text"
+              value={newItem.title}
+              onChange={e => setNewItem({ ...newItem, title: e.target.value })}
+              placeholder="Título del video..."
+              className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl mb-3 text-white placeholder-[#9aa0a6]"
+            />
+            <textarea
+              value={newItem.description}
+              onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+              placeholder="Descripción breve..."
+              className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl mb-3 text-white placeholder-[#9aa0a6] h-20"
+            />
+            <select
+              value={newItem.platform}
+              onChange={e => setNewItem({ ...newItem, platform: e.target.value as Platform })}
+              className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl mb-4 text-white"
+            >
+              <option value="youtube">▶️ YouTube</option>
+              <option value="instagram">📸 Instagram</option>
+              <option value="tiktok">🎵 TikTok</option>
+              <option value="linkedin">💼 LinkedIn</option>
+              <option value="twitter">🐦 Twitter</option>
+            </select>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 px-4 py-3 bg-[#272829] rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={addItem}
+                className="flex-1 px-4 py-3 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl font-medium"
+              >
+                Crear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setEditingItem(null)}>
+          <div className="bg-[#16181a] rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-4">Editar Contenido</h3>
+            
+            <div className="mb-4">
+              <label className="text-xs text-[#9aa0a6] mb-1 block">Título</label>
+              <input
+                type="text"
+                value={editingItem.title}
+                onChange={e => setEditingItem({ ...editingItem, title: e.target.value })}
+                className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl text-white"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="text-xs text-[#9aa0a6] mb-1 block">Descripción</label>
+              <textarea
+                value={editingItem.description || ""}
+                onChange={e => setEditingItem({ ...editingItem, description: e.target.value })}
+                className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl text-white h-20"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="text-xs text-[#9aa0a6] mb-1 block">Etapa</label>
+              <select
+                value={editingItem.stage}
+                onChange={e => setEditingItem({ ...editingItem, stage: e.target.value as ContentStage })}
+                className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl text-white"
+              >
+                {stageOrder.map(stage => (
+                  <option key={stage} value={stage}>{stageConfig[stage].label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="text-xs text-[#9aa0a6] mb-1 block">Plataforma</label>
+              <select
+                value={editingItem.platform}
+                onChange={e => setEditingItem({ ...editingItem, platform: e.target.value as Platform })}
+                className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl text-white"
+              >
+                <option value="youtube">▶️ YouTube</option>
+                <option value="instagram">📸 Instagram</option>
+                <option value="tiktok">🎵 TikTok</option>
+                <option value="linkedin">💼 LinkedIn</option>
+                <option value="twitter">🐦 Twitter</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="text-xs text-[#9aa0a6] mb-1 block">Asignado a</label>
+              <select
+                value={editingItem.assignee}
+                onChange={e => setEditingItem({ ...editingItem, assignee: e.target.value as Assignee })}
+                className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl text-white"
+              >
+                <option value="carlos">👤 Carlos</option>
+                <option value="amigo">🤖 Amigo</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="text-xs text-[#9aa0a6] mb-1 block">Script</label>
+              <textarea
+                value={editingItem.script || ""}
+                onChange={e => setEditingItem({ ...editingItem, script: e.target.value })}
+                placeholder="Escribe el script aquí..."
+                className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl text-white h-40"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditingItem(null)}
+                className="flex-1 px-4 py-3 bg-[#272829] rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  updateItem(editingItem.id, editingItem);
+                  setEditingItem(null);
+                }}
+                className="flex-1 px-4 py-3 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl font-medium"
+              >
+                Guardar
+              </button>
             </div>
           </div>
         </div>
