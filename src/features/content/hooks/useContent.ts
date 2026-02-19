@@ -8,6 +8,7 @@ interface UseContentReturn {
   items: ContentItem[];
   isLoaded: boolean;
   addContent: (item: Partial<ContentItem>) => Promise<ContentItem>;
+  updateContent: (id: string, updates: Partial<ContentItem>) => Promise<void>;
   updateContentStage: (id: string, stage: ContentStage) => Promise<void>;
   deleteContent: (id: string) => Promise<void>;
 }
@@ -64,6 +65,23 @@ export function useContent(): UseContentReturn {
     return created;
   }
 
+  async function updateContent(id: string, updates: Partial<ContentItem>): Promise<void> {
+    const payload = { ...updates, updated_at: new Date().toISOString() };
+
+    const { error } = await supabase
+      .from("content_items")
+      .update(payload)
+      .eq("id", id);
+
+    if (error) throw error;
+
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, ...payload } : item
+      )
+    );
+  }
+
   async function updateContentStage(id: string, stage: ContentStage): Promise<void> {
     const { error } = await supabase
       .from("content_items")
@@ -94,6 +112,7 @@ export function useContent(): UseContentReturn {
     items,
     isLoaded,
     addContent,
+    updateContent,
     updateContentStage,
     deleteContent,
   };
