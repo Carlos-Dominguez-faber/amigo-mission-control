@@ -65,7 +65,7 @@ export default function TaskBoard() {
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [view, setView] = useState<"tasks" | "docs" | "content">("tasks");
+  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar">("tasks");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -228,6 +228,12 @@ export default function TaskBoard() {
           >
             🎬
           </button>
+          <button
+            onClick={() => setView("calendar")}
+            className={`px-3 py-1.5 rounded-lg text-xs ${view === "calendar" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+          >
+            📅
+          </button>
         </div>
       </div>
 
@@ -262,6 +268,15 @@ export default function TaskBoard() {
           title="Content Pipeline"
         >
           🎬
+        </button>
+        <button
+          onClick={() => setView("calendar")}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            view === "calendar" ? "bg-[#7c3aed]" : "hover:bg-[#272829]"
+          }`}
+          title="Calendar"
+        >
+          📅
         </button>
       </div>
 
@@ -406,6 +421,8 @@ export default function TaskBoard() {
           </>
         ) : view === "docs" ? (
           <DocumentRepository />
+        ) : view === "calendar" ? (
+          <CalendarView />
         ) : (
           <ContentPipeline />
         )}
@@ -944,6 +961,265 @@ function ContentPipeline() {
                 className="flex-1 px-4 py-3 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl font-medium"
               >
                 Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Calendar Types and Component
+type CalendarEvent = {
+  id: string;
+  title: string;
+  time: string; // HH:MM format
+  dayOfWeek: number; // 0-6 (Sun-Sat)
+  color: string;
+  colorHex: string;
+  isRecurring: boolean;
+  interval?: "daily" | "weekly";
+};
+
+const CALENDAR_KEY = "amigo-mission-control-calendar";
+
+const defaultEvents: CalendarEvent[] = [
+  { id: "1", title: "Mission Control Check", time: "30min", dayOfWeek: -1, color: "blue", colorHex: "#3b82f6", isRecurring: true, interval: "daily" },
+  { id: "2", title: "AI Scarcity Research", time: "05:00", dayOfWeek: 1, color: "purple", colorHex: "#8b5cf6", isRecurring: true, interval: "daily" },
+  { id: "3", title: "Morning Brief", time: "08:00", dayOfWeek: 1, color: "yellow", colorHex: "#eab308", isRecurring: true, interval: "daily" },
+  { id: "4", title: "Newsletter Reminder", time: "09:00", dayOfWeek: 2, color: "green", colorHex: "#22c55e", isRecurring: true, interval: "weekly" },
+  { id: "5", title: "Competitor YouTube Scan", time: "10:00", dayOfWeek: 1, color: "red", colorHex: "#ef4444", isRecurring: true, interval: "daily" },
+  { id: "6", title: "Last30Days Report", time: "08:00", dayOfWeek: 4, color: "orange", colorHex: "#f97316", isRecurring: true, interval: "weekly" },
+];
+
+function CalendarView() {
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEvent, setNewEvent] = useState({ title: "", time: "09:00", dayOfWeek: 1, color: "blue" });
+
+  useEffect(() => {
+    const stored = localStorage.getItem(CALENDAR_KEY);
+    if (stored) {
+      try {
+        setEvents(JSON.parse(stored));
+      } catch (e) {
+        console.error("Failed to parse calendar", e);
+        setEvents(defaultEvents);
+      }
+    } else {
+      setEvents(defaultEvents);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem(CALENDAR_KEY, JSON.stringify(events));
+    }
+  }, [events, isLoaded]);
+
+  const addEvent = () => {
+    if (!newEvent.title.trim()) return;
+    const event: CalendarEvent = {
+      id: `event-${Date.now()}`,
+      title: newEvent.title,
+      time: newEvent.time,
+      dayOfWeek: newEvent.dayOfWeek,
+      color: newEvent.color,
+      colorHex: getColorHex(newEvent.color),
+      isRecurring: true,
+      interval: "weekly",
+    };
+    setEvents([...events, event]);
+    setNewEvent({ title: "", time: "09:00", dayOfWeek: 1, color: "blue" });
+    setShowAddModal(false);
+  };
+
+  const deleteEvent = (id: string) => {
+    setEvents(events.filter(e => e.id !== id));
+  };
+
+  const getColorHex = (color: string) => {
+    const colors: Record<string, string> = {
+      blue: "#3b82f6", purple: "#8b5cf6", yellow: "#eab308", green: "#22c55e", red: "#ef4444", orange: "#f97316"
+    };
+    return colors[color] || "#3b82f6";
+  };
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const today = new Date().getDay();
+  
+  // Get events for each day of the week (starting from today or Sunday)
+  const getEventsForDay = (dayIndex: number) => {
+    return events.filter(e => 
+      e.dayOfWeek === dayIndex || (e.dayOfWeek === -1) // -1 = always running
+    );
+  };
+
+  // Always running events
+  const alwaysRunning = events.filter(e => e.dayOfWeek === -1);
+
+  // Next up events (sorted by time)
+  const nextUpEvents = events
+    .filter(e => e.dayOfWeek !== -1)
+    .sort((a, b) => a.time.localeCompare(b.time))
+    .slice(0, 5);
+
+  const getRelativeTime = (time: string, day: number) => {
+    if (day === today) return `Today at ${time}`;
+    if (day === today + 1) return `Tomorrow at ${time}`;
+    return `${dayNames[day]} at ${time}`;
+  };
+
+  if (!isLoaded) return null;
+
+  return (
+    <div className="p-4 md:p-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold">Scheduled Tasks</h1>
+          <p className="text-sm text-[#9aa0a6]">Amigo's automated routines</p>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl text-sm font-medium"
+        >
+          + Add Task
+        </button>
+      </div>
+
+      {/* Always Running */}
+      {alwaysRunning.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-yellow-500">⚡</span>
+            <span className="font-medium">Always Running</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {alwaysRunning.map(event => (
+              <div
+                key={event.id}
+                className="flex items-center gap-2 px-3 py-2 bg-[#16181a] border border-[#272829] rounded-xl"
+              >
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: event.colorHex }} />
+                <span className="text-sm">{event.title}</span>
+                <span className="text-xs text-[#9aa0a6]">• {event.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Week Grid */}
+      <div className="mb-6 overflow-x-auto">
+        <div className="flex gap-2 md:gap-4 min-w-[700px]">
+          {dayNames.map((day, index) => (
+            <div key={day} className="flex-1 min-w-[90px]">
+              <div className={`text-xs font-medium mb-2 px-2 py-1 rounded-lg text-center ${
+                index === today ? "bg-[#7c3aed]" : "text-[#9aa0a6]"
+              }`}>
+                {day}
+              </div>
+              <div className="space-y-2 min-h-[150px] bg-[#0f1113]/50 rounded-xl p-2">
+                {getEventsForDay(index).map(event => (
+                  <div
+                    key={event.id}
+                    className="rounded-lg p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity group"
+                    style={{ backgroundColor: event.colorHex }}
+                    onClick={() => deleteEvent(event.id)}
+                  >
+                    <p className="font-medium text-white truncate">{event.title}</p>
+                    <p className="text-white/80">{event.time}</p>
+                  </div>
+                ))}
+                {getEventsForDay(index).length === 0 && (
+                  <p className="text-[#9aa0a6] text-xs text-center py-8">-</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Next Up */}
+      <div>
+        <h2 className="text-sm font-medium mb-3 px-2">Next Up</h2>
+        <div className="space-y-2">
+          {nextUpEvents.map(event => (
+            <div
+              key={event.id}
+              className="flex items-center justify-between px-3 py-2 bg-[#16181a] border border-[#272829] rounded-xl"
+            >
+              <div className="flex items-center gap-3">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: event.colorHex }} />
+                <span className="text-sm">{event.title}</span>
+              </div>
+              <span className="text-xs text-[#9aa0a6]">
+                {getRelativeTime(event.time, event.dayOfWeek)}
+              </span>
+            </div>
+          ))}
+          {nextUpEvents.length === 0 && (
+            <p className="text-[#9aa0a6] text-sm text-center py-4">No upcoming tasks</p>
+          )}
+        </div>
+      </div>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+          <div className="bg-[#16181a] rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-4">Add Scheduled Task</h3>
+            <input
+              type="text"
+              value={newEvent.title}
+              onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
+              placeholder="Task name..."
+              className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl mb-3 text-white placeholder-[#9aa0a6]"
+            />
+            <input
+              type="time"
+              value={newEvent.time}
+              onChange={e => setNewEvent({ ...newEvent, time: e.target.value })}
+              className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl mb-3 text-white"
+            />
+            <select
+              value={newEvent.dayOfWeek}
+              onChange={e => setNewEvent({ ...newEvent, dayOfWeek: parseInt(e.target.value) })}
+              className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl mb-3 text-white"
+            >
+              <option value={-1}>Always Running</option>
+              {dayNames.map((day, i) => (
+                <option key={i} value={i}>{day}</option>
+              ))}
+            </select>
+            <select
+              value={newEvent.color}
+              onChange={e => setNewEvent({ ...newEvent, color: e.target.value })}
+              className="w-full px-4 py-3 bg-[#0f1113] border border-[#272829] rounded-xl mb-4 text-white"
+            >
+              <option value="blue">🔵 Blue</option>
+              <option value="purple">🟣 Purple</option>
+              <option value="yellow">🟡 Yellow</option>
+              <option value="green">🟢 Green</option>
+              <option value="red">🔴 Red</option>
+              <option value="orange">🟠 Orange</option>
+            </select>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="flex-1 px-4 py-3 bg-[#272829] rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={addEvent}
+                className="flex-1 px-4 py-3 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl font-medium"
+              >
+                Crear
               </button>
             </div>
           </div>
