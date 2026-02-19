@@ -250,7 +250,6 @@ export default function TaskBoard() {
           }`} title={avatarState} />
         </div>
       </div>
-      </div>
 
       {/* Desktop Sidebar */}
       <div className="hidden md:fixed left-0 top-0 h-full w-16 bg-[#0f1113] flex flex-col items-center py-6 gap-4 z-50">
