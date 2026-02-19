@@ -51,25 +51,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleSignUp = async () => {
-    setLoading(true);
-    setError("");
-    
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      setError("✅ Revisa tu email para confirmar");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#0b0c0e] flex flex-col items-center justify-center p-4">
       {/* Avatar */}
@@ -102,7 +83,7 @@ export default function LoginPage() {
         </svg>
       </div>
 
-      <h1 className="text-2xl font-bold text-white mb-2">Mission Control</h1>
+      <h1 className="text-2xl font-bold text-white mb-2">Amigo Mission Control</h1>
       <p className="text-[#9aa0a6] mb-2">Your AI-powered command center</p>
       <p className="text-xs text-[#6b7280] mb-8">Task • Content • Calendar • Memory • Team • Office</p>
 
@@ -134,13 +115,6 @@ export default function LoginPage() {
             className="flex-1 py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-600/50 text-white font-medium rounded-xl transition-colors"
           >
             {loading ? "..." : "Login"}
-          </button>
-          <button
-            onClick={handleSignUp}
-            disabled={loading || !email || !password}
-            className="flex-1 py-3 bg-[#272829] hover:bg-[#353638] disabled:bg-[#272829]/50 text-white font-medium rounded-xl transition-colors"
-          >
-            {loading ? "..." : "Sign Up"}
           </button>
         </div>
       </div>

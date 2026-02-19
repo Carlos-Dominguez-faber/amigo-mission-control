@@ -45,13 +45,13 @@ async function seedData() {
 
   // Team Members
   const teamMembers = [
-    { id: uuid(), name: "Carlos", role: "Founder & CEO", description: "Visionario y operador principal", skills: "Strategy, Sales, Operations", color: "#7c3aed", layer: "leadership", avatar: "👤", created_at: now },
-    { id: uuid(), name: "Amigo", role: "Chief of Staff", description: "Tu AI partner técnico", skills: "Development, Automation, Research", color: "#ff6b00", layer: "leadership", avatar: "🤖", created_at: now },
-    { id: uuid(), name: "Scout", role: "Research Agent", description: "Investiga oportunidades y tendencias", skills: "Web research, Analysis", color: "#10b981", layer: "agent", avatar: "🔍", created_at: now },
-    { id: uuid(), name: "Quill", role: "Writer Agent", description: "Crea contenido y copy", skills: "Writing, Copywriting", color: "#3b82f6", layer: "agent", avatar: "✍️", created_at: now },
-    { id: uuid(), name: "Pixel", role: "Designer Agent", description: "Diseño visual y branding", skills: "Design, UI/UX", color: "#ec4899", layer: "agent", avatar: "🎨", created_at: now },
-    { id: uuid(), name: "Echo", role: "Outreach Agent", description: "Automatización de mensajes", skills: "Messaging, Sales", color: "#f59e0b", layer: "agent", avatar: "📢", created_at: now },
-    { id: uuid(), name: "Codex", role: "Developer Agent", description: "Code reviews y arquitectura", skills: "Development, Architecture", color: "#06b6d4", layer: "meta", avatar: "💻", created_at: now },
+    { id: uuid(), name: "Carlos", role: "Founder & CEO", description: "Visionario y operador principal", skills: ["Strategy", "Sales", "Operations"], color: "#7c3aed", layer: "leadership", avatar: "👤", created_at: now },
+    { id: uuid(), name: "Amigo", role: "Chief of Staff", description: "Tu AI partner técnico", skills: ["Development", "Automation", "Research"], color: "#ff6b00", layer: "leadership", avatar: "🤖", created_at: now },
+    { id: uuid(), name: "Scout", role: "Research Agent", description: "Investiga oportunidades y tendencias", skills: ["Web research", "Analysis"], color: "#10b981", layer: "agent", avatar: "🔍", created_at: now },
+    { id: uuid(), name: "Quill", role: "Writer Agent", description: "Crea contenido y copy", skills: ["Writing", "Copywriting"], color: "#3b82f6", layer: "agent", avatar: "✍️", created_at: now },
+    { id: uuid(), name: "Pixel", role: "Designer Agent", description: "Diseño visual y branding", skills: ["Design", "UI/UX"], color: "#ec4899", layer: "agent", avatar: "🎨", created_at: now },
+    { id: uuid(), name: "Echo", role: "Outreach Agent", description: "Automatización de mensajes", skills: ["Messaging", "Sales"], color: "#f59e0b", layer: "agent", avatar: "📢", created_at: now },
+    { id: uuid(), name: "Codex", role: "Developer Agent", description: "Code reviews y arquitectura", skills: ["Development", "Architecture"], color: "#06b6d4", layer: "meta", avatar: "💻", created_at: now },
   ];
 
   // Office Agents
