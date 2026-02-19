@@ -5,6 +5,7 @@ import { DashboardHeader } from "@/features/dashboard/components/DashboardHeader
 import { NavigationTabs, type TabId } from "@/features/dashboard/components/NavigationTabs";
 import TaskBoard from "@/features/tasks/components/TaskBoard";
 import ContentBoard from "@/features/content/components/ContentBoard";
+import CalendarBoard from "@/features/calendar/components/CalendarBoard";
 import { DocumentPreviewModal } from "@/features/tasks/components/DocumentPreviewModal";
 import type { AvatarState } from "@/shared/components/AnimatedAvatar";
 import { useTasks } from "@/features/tasks/hooks/useTasks";
@@ -53,7 +54,9 @@ export default function DashboardPage() {
 
         {activeTab === "content" && <ContentBoard />}
 
-        {activeTab !== "tasks" && activeTab !== "content" && (
+        {activeTab === "calendar" && <CalendarBoard />}
+
+        {activeTab !== "tasks" && activeTab !== "content" && activeTab !== "calendar" && (
           <div className="text-center py-20 text-[#9aa0a6]">
             <p className="text-lg font-medium">Coming Soon</p>
             <p className="text-sm mt-1">This feature is under development.</p>

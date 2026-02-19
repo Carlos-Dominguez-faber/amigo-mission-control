@@ -8,6 +8,8 @@ interface UseCalendarReturn {
   events: CalendarEvent[];
   isLoaded: boolean;
   addEvent: (event: Partial<CalendarEvent>) => Promise<CalendarEvent>;
+  updateEvent: (id: string, updates: Partial<CalendarEvent>) => Promise<void>;
+  deleteEvent: (id: string) => Promise<void>;
 }
 
 export function useCalendar(): UseCalendarReturn {
@@ -58,9 +60,35 @@ export function useCalendar(): UseCalendarReturn {
     return created;
   }
 
+  async function updateEvent(id: string, updates: Partial<CalendarEvent>): Promise<void> {
+    const { error } = await supabase
+      .from("calendar_events")
+      .update(updates)
+      .eq("id", id);
+
+    if (error) throw error;
+
+    setEvents((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
+    );
+  }
+
+  async function deleteEvent(id: string): Promise<void> {
+    const { error } = await supabase
+      .from("calendar_events")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+
+    setEvents((prev) => prev.filter((e) => e.id !== id));
+  }
+
   return {
     events,
     isLoaded,
     addEvent,
+    updateEvent,
+    deleteEvent,
   };
 }
