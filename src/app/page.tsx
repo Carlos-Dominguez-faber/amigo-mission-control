@@ -65,7 +65,7 @@ export default function TaskBoard() {
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar">("tasks");
+  const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory">("tasks");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -234,6 +234,12 @@ export default function TaskBoard() {
           >
             📅
           </button>
+          <button
+            onClick={() => setView("memory")}
+            className={`px-3 py-1.5 rounded-lg text-xs ${view === "memory" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+          >
+            🧠
+          </button>
         </div>
       </div>
 
@@ -277,6 +283,15 @@ export default function TaskBoard() {
           title="Calendar"
         >
           📅
+        </button>
+        <button
+          onClick={() => setView("memory")}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            view === "memory" ? "bg-[#7c3aed]" : "hover:bg-[#272829]"
+          }`}
+          title="Memory"
+        >
+          🧠
         </button>
       </div>
 
@@ -423,6 +438,8 @@ export default function TaskBoard() {
           <DocumentRepository />
         ) : view === "calendar" ? (
           <CalendarView />
+        ) : view === "memory" ? (
+          <MemoryView />
         ) : (
           <ContentPipeline />
         )}
@@ -1225,6 +1242,280 @@ function CalendarView() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Memory Types and Component
+interface MemoryEntry {
+  id: string;
+  title: string;
+  content: string;
+  timestamp: number;
+  type: "decision" | "issue" | "conversation" | "learning" | "daily";
+}
+
+const MEMORY_KEY = "amigo-mission-control-memories";
+
+const defaultMemories: MemoryEntry[] = [
+  {
+    id: "1",
+    title: "Journal: 2026-02-19",
+    content: `## Mission Control Launch
+- Created task board with auto state detection
+- Added content pipeline (Ideas → Publishing)
+- Added calendar for scheduled tasks
+- Avatar auto-changes based on task status
+
+## Decisions Made
+- Using Supabase instead of Convex (already in stack)
+- LocalStorage for now, Supabase sync later
+- Dark theme with purple accents
+
+## OpenClaw Research
+- Email automation is #1 use case
+- Daily briefings high value, low setup
+- Content pipeline automation popular`,
+    timestamp: Date.now(),
+    type: "daily"
+  },
+  {
+    id: "2", 
+    title: "Architecture Decision: Subagents",
+    content: `- Decided to NOT use subagents for now
+- Main agent can handle most tasks
+- Subagents adds complexity without clear ROI
+- Can revisit if complexity grows`,
+    timestamp: Date.now() - 86400000,
+    type: "decision"
+  },
+  {
+    id: "3",
+    title: "Setup: VPS Configuration",
+    content: `- Host: srv1325690 (Hostinger)
+- IP: 72.60.114.217
+- Connection: Telegram + SSH tunnel
+- Purpose: OpenClaw host`,
+    timestamp: Date.now() - 172800000,
+    type: "learning"
+  },
+  {
+    id: "4",
+    title: "User Profile: Carlos Domínguez",
+    content: `- Founder: Upper Edge Property Management, LandlordPal, Virtual Staging Pro
+- Stack: React, Node, Make, n8n, Supabase
+- Goals 2026: Scale VSP to 50-100 clients, automate UEPM
+- Communication: Spanish, audio for audio, text for text`,
+    timestamp: Date.now() - 259200000,
+    type: "conversation"
+  },
+];
+
+function MemoryView() {
+  const [memories, setMemories] = useState<MemoryEntry[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [selectedMemory, setSelectedMemory] = useState<MemoryEntry | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "decision" | "issue" | "conversation" | "learning" | "daily">("all");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(MEMORY_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setMemories(parsed);
+        if (parsed.length > 0) setSelectedMemory(parsed[0]);
+      } catch (e) {
+        console.error("Failed to parse memories", e);
+        setMemories(defaultMemories);
+        setSelectedMemory(defaultMemories[0]);
+      }
+    } else {
+      setMemories(defaultMemories);
+      setSelectedMemory(defaultMemories[0]);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded && memories.length > 0) {
+      localStorage.setItem(MEMORY_KEY, JSON.stringify(memories));
+    }
+  }, [memories, isLoaded]);
+
+  // Group memories by time
+  const groupedMemories = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterday = today - 86400000;
+    const weekAgo = today - 7 * 86400000;
+    const monthAgo = today - 30 * 86400000;
+
+    const groups: { label: string; items: MemoryEntry[] }[] = [
+      { label: "Today", items: [] },
+      { label: "Yesterday", items: [] },
+      { label: "This Week", items: [] },
+      { label: "This Month", items: [] },
+      { label: "Older", items: [] },
+    ];
+
+    memories.forEach(m => {
+      if (m.timestamp >= today) groups[0].items.push(m);
+      else if (m.timestamp >= yesterday) groups[1].items.push(m);
+      else if (m.timestamp >= weekAgo) groups[2].items.push(m);
+      else if (m.timestamp >= monthAgo) groups[3].items.push(m);
+      else groups[4].items.push(m);
+    });
+
+    return groups.filter(g => g.items.length > 0);
+  };
+
+  // Filter by search and type
+  const filteredMemories = memories.filter(m => {
+    const matchesSearch = searchQuery === "" || 
+      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.content.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filter === "all" || m.type === filter;
+    return matchesSearch && matchesFilter;
+  });
+
+  const getTypeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      decision: "text-purple-400",
+      issue: "text-red-400",
+      conversation: "text-blue-400",
+      learning: "text-green-400",
+      daily: "text-yellow-400",
+    };
+    return colors[type] || "text-gray-400";
+  };
+
+  const getTypeIcon = (type: string) => {
+    const icons: Record<string, string> = {
+      decision: "⚡",
+      issue: "⚠️",
+      conversation: "💬",
+      learning: "📚",
+      daily: "📝",
+    };
+    return icons[type] || "📄";
+  };
+
+  if (!isLoaded) return null;
+
+  const wordCount = selectedMemory ? selectedMemory.content.split(/\s+/).length : 0;
+
+  return (
+    <div className="flex h-[calc(100vh-80px)]">
+      {/* Left: Memory Browser */}
+      <div className="w-full md:w-72 border-r border-[#272829] flex flex-col">
+        {/* Search */}
+        <div className="p-4 border-b border-[#272829]">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search memories..."
+            className="w-full px-3 py-2 bg-[#0f1113] border border-[#272829] rounded-lg text-sm text-white placeholder-[#9aa0a6]"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="p-2 border-b border-[#272829] flex flex-wrap gap-1">
+          {(["all", "decision", "conversation", "learning", "daily"] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-2 py-1 rounded text-xs capitalize ${
+                filter === f ? "bg-[#7c3aed]" : "bg-[#16181a] text-[#9aa0a6]"
+              }`}
+            >
+              {f === "all" ? "All" : getTypeIcon(f) + " " + f}
+            </button>
+          ))}
+        </div>
+
+        {/* Memory List */}
+        <div className="flex-1 overflow-y-auto">
+          {groupedMemories().map(group => (
+            <div key={group.label}>
+              <div className="px-4 py-2 text-xs text-[#9aa0a6] font-medium sticky top-0 bg-[#0b0c0e]">
+                {group.label} ({group.items.length})
+              </div>
+              {group.items.map(memory => (
+                <button
+                  key={memory.id}
+                  onClick={() => setSelectedMemory(memory)}
+                  className={`w-full text-left px-4 py-3 border-b border-[#272829] hover:bg-[#16181a] transition-colors ${
+                    selectedMemory?.id === memory.id ? "bg-[#16181a] border-l-2 border-l-[#7c3aed]" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs">{getTypeIcon(memory.type)}</span>
+                    <span className="text-sm font-medium truncate">{memory.title}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[#9aa0a6]">
+                      {new Date(memory.timestamp).toLocaleDateString()}
+                    </span>
+                    <span className="text-xs text-[#9aa0a6]">
+                      {memory.content.split(/\s+/).length} words
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ))}
+          {filteredMemories.length === 0 && (
+            <p className="text-[#9aa0a6] text-sm text-center py-8">No memories found</p>
+          )}
+        </div>
+      </div>
+
+      {/* Right: Memory Content */}
+      <div className="hidden md:flex flex-1 flex-col overflow-hidden">
+        {selectedMemory ? (
+          <>
+            {/* Header */}
+            <div className="p-6 border-b border-[#272829]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{getTypeIcon(selectedMemory.type)}</span>
+                  <div>
+                    <h2 className="text-xl font-bold">{selectedMemory.title}</h2>
+                    <p className="text-sm text-[#9aa0a6]">
+                      {new Date(selectedMemory.timestamp).toLocaleString()} • {wordCount} words
+                    </p>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded ${getTypeColor(selectedMemory.type)} bg-[#0f1113]`}>
+                  {selectedMemory.type}
+                </span>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="prose prose-invert max-w-none">
+                {selectedMemory.content.split("\n").map((line, i) => {
+                  if (line.startsWith("## ")) {
+                    return <h3 key={i} className="text-lg font-bold text-white mt-4 mb-2">{line.replace("## ", "")}</h3>;
+                  }
+                  if (line.startsWith("- ")) {
+                    return <li key={i} className="text-[#e6e6e6] ml-4">{line.replace("- ", "")}</li>;
+                  }
+                  if (line.trim() === "") return <br key={i} />;
+                  return <p key={i} className="text-[#e6e6e6]">{line}</p>;
+                })}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-[#9aa0a6]">
+            <p>Select a memory to view</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
