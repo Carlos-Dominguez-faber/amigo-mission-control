@@ -74,6 +74,25 @@ export default function TaskBoard() {
       }
     }
     setIsLoaded(true);
+    
+    // Check URL params for new task
+    const params = new URLSearchParams(window.location.search);
+    const newTask = params.get('task');
+    const assignee = params.get('assignee') as Assignee || 'carlos';
+    if (newTask) {
+      const now = Date.now();
+      const task: Task = {
+        id: `task-${now}`,
+        title: decodeURIComponent(newTask),
+        status: "todo",
+        assignee: assignee,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setTasks(prev => [...prev, task]);
+      // Clear URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   // Save to localStorage and auto-detect avatar state
