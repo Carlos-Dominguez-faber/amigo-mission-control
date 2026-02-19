@@ -1,6 +1,31 @@
 @import 'tailwindcss';
 
-/*
- * Personaliza tu tema aquí
- * Documentación: https://tailwindcss.com/docs/theme
- */
+:root {
+  --background: #0b0c0e;
+  --foreground: #ffffff;
+  --orange: #ff6b00;
+  --purple: #7c3aed;
+  --cyan: #06b6d4;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #18181b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
