@@ -89,6 +89,7 @@ function useTasks() {
       created_at: now, updated_at: now,
     };
     await saveTasks([...tasks, newTask]);
+    return newTask;
   };
 
   const updateTaskStatus = async (id: string, status: TaskStatus) => {
@@ -144,6 +145,7 @@ export default function TaskBoard() {
   const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
   const [linkedDocs, setLinkedDocs] = useState<Record<string, string[]>>({});
+  const [pendingDoc, setPendingDoc] = useState<string | null>(null);
   const [showDocsModal, setShowDocsModal] = useState<string | null>(null);
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office">("tasks");
@@ -154,6 +156,24 @@ export default function TaskBoard() {
   const { memories, isLoaded: memoryLoaded, addMemory } = useMemories();
   const { members: teamMembers, isLoaded: teamLoaded } = useTeam();
   const { agents: officeAgents, isLoaded: officeLoaded } = useOffice();
+  const [allDocs, setAllDocs] = useState<string[]>([]);
+
+  // Load docs from storage
+  useEffect(() => {
+    const loadDocs = async () => {
+      const token = localStorage.getItem("sb-access-token");
+      try {
+        const res = await fetch("https://cvofvffeabstndbuzwjc.supabase.co/storage/v1/object/list/documents", {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAllDocs(data.map((f: any) => f.name));
+        }
+      } catch(e) { console.log("No docs"); }
+    };
+    if (view === "docs") loadDocs();
+  }, [view]);
 
   // Auth check - runs once on mount
   useEffect(() => {
@@ -191,7 +211,11 @@ export default function TaskBoard() {
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    await addTask(newTaskTitle, newTaskAssignee, newTaskPriority, newTaskDescription);
+    const newTask = await addTask(newTaskTitle, newTaskAssignee, newTaskPriority, newTaskDescription);
+    if (pendingDoc && newTask?.id) {
+      setLinkedDocs(prev => ({ ...prev, [newTask.id]: [pendingDoc] }));
+      setPendingDoc(null);
+    }
     setNewTaskTitle(""); setNewTaskDescription(""); setNewTaskPriority("medium");
   };
 
@@ -295,9 +319,10 @@ export default function TaskBoard() {
                               body: formData
                             });
                             if (res.ok) {
-                              alert("✅ Archivo subido: " + file.name);
+                              setPendingDoc(file.name);
+                              alert("✅ Listo: " + file.name);
                             } else {
-                              alert("❌ Error al subir: " + res.statusText);
+                              alert("❌ Error: " + res.statusText);
                             }
                           } catch(err) {
                             alert("❌ Error: " + err);
@@ -305,6 +330,7 @@ export default function TaskBoard() {
                         }
                       }} 
                     />
+                    {pendingDoc && <span className="text-xs text-orange-400">📎 {pendingDoc}</span>}
                   </label>
                 </div>
               </div>
@@ -332,6 +358,13 @@ export default function TaskBoard() {
                           </div>
                           {task.description && <p className="text-xs text-[#9aa0a6] mb-2 line-clamp-1">{task.description}</p>}
                           {task.notes && <p className="text-xs text-[#7c3aed] mb-2">📝 {task.notes.substring(0,20)}...</p>}
+                          {(linkedDocs[task.id] || []).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {(linkedDocs[task.id] || []).map((doc, i) => (
+                                <span key={i} className="text-xs px-2 py-1 rounded-lg bg-orange-500/20 text-orange-400">📎 {doc}</span>
+                              ))}
+                            </div>
+                          )}
                           <div className="flex flex-wrap gap-1.5">
                             <select value={task.priority || "medium"} onClick={e => e.stopPropagation()} onChange={e => updateTaskPriority(task.id, e.target.value)} className={`text-xs px-2 py-1 rounded-lg ${task.priority === "high" ? "bg-red-500/20 text-red-400" : task.priority === "low" ? "bg-zinc-500/20 text-zinc-400" : "bg-yellow-500/20 text-yellow-400"}`}>
                               <option value="low">🟢</option><option value="medium">🟡</option><option value="high">🔴</option>
@@ -356,8 +389,26 @@ export default function TaskBoard() {
         {view === "docs" && (
           <div className="p-6">
             <h2 className="text-xl font-bold text-white mb-4">📁 Documents</h2>
-            <div className="bg-[#16181a] rounded-2xl p-6 border border-[#272829]">
-              <p className="text-[#9aa0a6]">Coming soon - Supabase Storage integration</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {allDocs.length === 0 ? (
+                <p className="text-[#9aa0a6] col-span-full">No hay documentos. Sube uno en Tasks.</p>
+              ) : (
+                allDocs.map((doc, i) => (
+                  <div key={i} className="bg-[#16181a] rounded-2xl p-4 border border-[#272829] flex items-center gap-3">
+                    <span className="text-2xl">📄</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white truncate">{doc}</p>
+                      <a 
+                        href={`https://cvofvffeabstndbuzwjc.supabase.co/storage/v1/object/public/documents/${doc}`} 
+                        target="_blank" 
+                        className="text-xs text-orange-400 hover:underline"
+                      >
+                        Ver →
+                      </a>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
