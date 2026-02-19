@@ -274,14 +274,34 @@ export default function TaskBoard() {
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-2 px-3 py-2 bg-[#16181a] border border-[#272829] rounded-xl text-sm text-[#9aa0a6] cursor-pointer hover:border-[#7c3aed]/50">
                     <span>📎</span>
-                    <span className="text-xs">Adjuntar documento</span>
+                    <span className="text-xs">Adjuntar</span>
                     <input 
                       type="file" 
                       className="hidden" 
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          alert(`📎 Archivo seleccionado: ${file.name}\n\n(Upload coming soon - Storage bucket needed)`);
+                          const token = localStorage.getItem("sb-access-token");
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          
+                          try {
+                            const res = await fetch("https://cvofvffeabstndbuzwjc.supabase.co/storage/v1/object/documents/" + file.name, {
+                              method: "POST",
+                              headers: {
+                                "Authorization": "Bearer " + token,
+                                "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2b2Z2ZmZlYWJzdG5kYnV6d2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MTA0NDgsImV4cCI6MjA4NzA4NjQ0OH0.aEeyaSMDKWuUeNTPRHguPhwrlXbB6yj5T2FdPwcdbSM"
+                              },
+                              body: formData
+                            });
+                            if (res.ok) {
+                              alert("✅ Archivo subido: " + file.name);
+                            } else {
+                              alert("❌ Error al subir: " + res.statusText);
+                            }
+                          } catch(err) {
+                            alert("❌ Error: " + err);
+                          }
                         }
                       }} 
                     />
