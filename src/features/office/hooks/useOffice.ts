@@ -33,6 +33,24 @@ export function useOffice(): UseOfficeReturn {
     loadAgents();
   }, [loadAgents]);
 
+  // Supabase Realtime: listen for agent state changes (e.g. from OpenClaw)
+  useEffect(() => {
+    const channel = supabase
+      .channel("office-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "office_agents" },
+        () => {
+          loadAgents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadAgents]);
+
   async function updateAgent(id: string, updates: Partial<OfficeAgent>): Promise<void> {
     const payload = { ...updates, updated_at: new Date().toISOString() };
     const { error } = await supabase

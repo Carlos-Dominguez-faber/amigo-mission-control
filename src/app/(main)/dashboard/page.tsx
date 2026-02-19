@@ -18,15 +18,22 @@ import { useTasks } from "@/features/tasks/hooks/useTasks";
 function detectAvatarState(
   tasks: { assignee: string; status: string; updated_at: string }[]
 ): AvatarState {
+  const amigoTasks = tasks.filter((t) => t.assignee === "amigo");
+
+  // Working: Amigo has in-progress or recently updated todo tasks
   const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  const amigoActive = tasks.some(
+  const amigoWorking = amigoTasks.some(
     (t) =>
-      t.assignee === "amigo" &&
-      (t.status === "in-progress" || t.status === "todo") &&
-      new Date(t.updated_at).getTime() > fiveMinutesAgo
+      t.status === "in-progress" ||
+      (t.status === "todo" && new Date(t.updated_at).getTime() > fiveMinutesAgo)
   );
-  if (amigoActive) return "working";
-  if (tasks.some((t) => t.status !== "done")) return "thinking";
+  if (amigoWorking) return "working";
+
+  // Thinking: Amigo has pending tasks (todo, not recently updated)
+  const amigoPending = amigoTasks.some((t) => t.status !== "done");
+  if (amigoPending) return "thinking";
+
+  // Resting: Amigo has no pending tasks
   return "resting";
 }
 
