@@ -15,7 +15,12 @@ export async function uploadDocument(
     .from(BUCKET)
     .upload(storagePath, file);
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    if (uploadError.message?.includes("Bucket not found")) {
+      throw new Error("Storage bucket 'task-documents' not found. Run the SQL migration first.");
+    }
+    throw new Error(`Upload failed: ${uploadError.message}`);
+  }
 
   const { data: urlData } = supabase.storage
     .from(BUCKET)
@@ -38,7 +43,9 @@ export async function uploadDocument(
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(`Failed to save document record: ${error.message}`);
+  }
   return data as TaskDocument;
 }
 

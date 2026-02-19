@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
-import { X, Download, ExternalLink } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { X, Download, ExternalLink, AlertCircle } from "lucide-react";
 
 interface DocumentPreviewModalProps {
   url: string;
@@ -19,6 +19,8 @@ function isPdf(fileType: string): boolean {
 }
 
 export function DocumentPreviewModal({ url, fileType, name, onClose }: DocumentPreviewModalProps) {
+  const [loadError, setLoadError] = useState(false);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -83,26 +85,43 @@ export function DocumentPreviewModal({ url, fileType, name, onClose }: DocumentP
 
         {/* Content */}
         <div className="flex-1 overflow-auto">
-          {isPdf(fileType) && (
+          {loadError && (
+            <div className="flex flex-col items-center justify-center gap-4 p-8 text-center min-h-[40vh]">
+              <AlertCircle className="w-8 h-8 text-red-400" aria-hidden="true" />
+              <p className="text-red-400 text-sm">Failed to load preview.</p>
+              <a
+                href={url}
+                download={name}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#7c3aed] text-white text-sm font-medium hover:bg-[#6d28d9] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed] focus-visible:ring-offset-2 focus-visible:ring-offset-[#16181a]"
+              >
+                <Download className="w-4 h-4" aria-hidden="true" />
+                Download instead
+              </a>
+            </div>
+          )}
+
+          {!loadError && isPdf(fileType) && (
             <iframe
               src={url}
               title={name}
               className="w-full h-full min-h-[60vh] border-0"
+              onError={() => setLoadError(true)}
             />
           )}
 
-          {isImage(fileType) && (
+          {!loadError && isImage(fileType) && (
             <div className="flex items-center justify-center p-4 h-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={url}
                 alt={name}
                 className="max-w-full max-h-[70vh] object-contain mx-auto rounded-lg"
+                onError={() => setLoadError(true)}
               />
             </div>
           )}
 
-          {!isPdf(fileType) && !isImage(fileType) && (
+          {!loadError && !isPdf(fileType) && !isImage(fileType) && (
             <div className="flex flex-col items-center justify-center gap-4 p-8 text-center min-h-[40vh]">
               <p className="text-[#9aa0a6] text-sm">Preview is not available for this file type.</p>
               <a

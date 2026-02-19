@@ -5,6 +5,7 @@ import type { Task } from "@/features/tasks/types";
 import { useTaskDocuments } from "@/features/tasks/hooks/useTaskDocuments";
 import { DocumentUpload } from "./DocumentUpload";
 import { DocumentList } from "./DocumentList";
+import { AlertCircle } from "lucide-react";
 
 interface TaskCardExpandedProps {
   task: Task;
@@ -20,6 +21,7 @@ export default function TaskCardExpanded({
   const { documents, isLoading, loadDocuments, upload, remove } = useTaskDocuments();
   const [notesValue, setNotesValue] = useState(task.notes ?? "");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const hasLoaded = useRef(false);
 
   // Load documents on first mount
@@ -41,10 +43,13 @@ export default function TaskCardExpanded({
 
   async function handleUpload(file: File) {
     setIsUploading(true);
+    setUploadError(null);
     try {
       await upload(task.id, file);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("[TaskCardExpanded] Upload failed:", err);
+      const message = err instanceof Error ? err.message : "Upload failed. Check your connection.";
+      setUploadError(message);
     } finally {
       setIsUploading(false);
     }
@@ -90,6 +95,20 @@ export default function TaskCardExpanded({
             onPreview={onDocumentPreview}
             onDelete={remove}
           />
+        )}
+
+        {uploadError && (
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-red-400/10 border border-red-400/20">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
+            <p className="text-xs text-red-400 flex-1">{uploadError}</p>
+            <button
+              type="button"
+              onClick={() => setUploadError(null)}
+              className="text-xs text-red-400/60 hover:text-red-400"
+            >
+              Dismiss
+            </button>
+          </div>
         )}
 
         <DocumentUpload onUpload={handleUpload} isUploading={isUploading} />
