@@ -203,44 +203,53 @@ export default function TaskBoard() {
 
   return (
     <div className="min-h-screen bg-[#0b0c0e] text-white">
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#0f1113] flex items-center justify-between px-4 z-50 border-b border-[#272829]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center text-sm">🤝</div>
-          <span className="font-semibold">Mission Control</span>
-        </div>
-        <div className="flex gap-2">
+      {/* Mobile Header - Simplified */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-12 bg-[#0f1113] flex items-center justify-between px-3 z-50 border-b border-[#272829]">
+        <div className="flex gap-1 overflow-x-auto">
           <button
             onClick={() => setView("tasks")}
-            className={`px-3 py-1.5 rounded-lg text-xs ${view === "tasks" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === "tasks" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            title="Tasks"
           >
             📋
           </button>
           <button
-            onClick={() => setView("docs")}
-            className={`px-3 py-1.5 rounded-lg text-xs ${view === "docs" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
-          >
-            📁
-          </button>
-          <button
             onClick={() => setView("content")}
-            className={`px-3 py-1.5 rounded-lg text-xs ${view === "content" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === "content" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            title="Content"
           >
             🎬
           </button>
           <button
             onClick={() => setView("calendar")}
-            className={`px-3 py-1.5 rounded-lg text-xs ${view === "calendar" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === "calendar" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            title="Calendar"
           >
             📅
           </button>
           <button
             onClick={() => setView("memory")}
-            className={`px-3 py-1.5 rounded-lg text-xs ${view === "memory" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === "memory" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            title="Memory"
           >
             🧠
           </button>
+          <button
+            onClick={() => setView("docs")}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${view === "docs" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+            title="Docs"
+          >
+            📁
+          </button>
         </div>
+        <div className="flex items-center gap-2">
+          {/* Mini Avatar Status */}
+          <div className={`w-2 h-2 rounded-full ${
+            avatarState === "working" ? "bg-orange-500" :
+            avatarState === "thinking" ? "bg-yellow-500" : "bg-zinc-500"
+          }`} title={avatarState} />
+        </div>
+      </div>
       </div>
 
       {/* Desktop Sidebar */}
@@ -296,7 +305,7 @@ export default function TaskBoard() {
       </div>
 
       {/* Main Content */}
-      <div className="pt-14 md:pt-0 md:pl-16">
+      <div className="pt-12 md:pt-0 md:pl-16">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 p-4 md:p-6 border-b border-[#272829]">
           <div className="flex items-center gap-4">
