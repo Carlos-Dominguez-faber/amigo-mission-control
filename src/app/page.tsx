@@ -66,13 +66,31 @@ export default function TaskBoard() {
   // Load from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
+    let loadedTasks: Task[] = [];
     if (stored) {
       try {
-        setTasks(JSON.parse(stored));
+        loadedTasks = JSON.parse(stored);
+        setTasks(loadedTasks);
       } catch (e) {
         console.error("Failed to parse tasks", e);
       }
     }
+    
+    // Add default task if none exist
+    if (loadedTasks.length === 0) {
+      const now = Date.now();
+      const defaultTask: Task = {
+        id: `task-${now}`,
+        title: "Investigar casos uso OpenClaw para creators",
+        status: "in-progress",
+        assignee: "amigo",
+        createdAt: now,
+        updatedAt: now,
+      };
+      setTasks([defaultTask]);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([defaultTask]));
+    }
+    
     setIsLoaded(true);
     
     // Check URL params for new task
