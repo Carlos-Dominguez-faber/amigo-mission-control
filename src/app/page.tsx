@@ -20,35 +20,6 @@ interface Task {
   updated_at: number;
 }
 
-export default function Home() {
-  const router = useRouter();
-  const [view, setView] = useState("tasks");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
-      } else {
-        setIsAuthenticated(true);
-      }
-      setLoading(false);
-    };
-    checkAuth();
-  }, [router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0b0c0e] flex items-center justify-center">
-        <div className="text-orange-500">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) return null;
-
 // Task hook with Supabase
 function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -160,14 +131,39 @@ function detectAvatarState(tasks: Task[]): AvatarState {
   return "thinking";
 }
 
-function TaskBoard() {
+export default function TaskBoard() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+      } else {
+        setIsAuthenticated(true);
+      }
+      setLoading(false);
+    };
+    checkAuth();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0b0c0e] flex items-center justify-center">
+        <div className="text-orange-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
   const { tasks, isLoaded, isOnline, addTask, updateTaskStatus, updateTaskAssignee, updateTaskPriority, deleteTask } = useTasks();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
   const [newTaskAssignee, setNewTaskAssignee] = useState<Assignee>("carlos");
-  const [linkedDocs, setLinkedDocs] = useState<Record<string, string[]>>({}); // taskId -> docIds
-  const [showDocsModal, setShowDocsModal] = useState<string | null>(null); // taskId
   const [avatarState, setAvatarState] = useState<AvatarState>("resting");
   const [view, setView] = useState<"tasks" | "docs" | "content" | "calendar" | "memory" | "team" | "office">("tasks");
 
@@ -315,24 +311,6 @@ function TaskBoard() {
         {view === "team" && <div className="p-6 text-[#9aa0a6]">👥 Team - Coming soon</div>}
         {view === "office" && <div className="p-6 text-[#9aa0a6]">🏢 Office - Coming soon</div>}
       </div>
-
-      {/* Linked Documents Modal */}
-      {showDocsModal && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowDocsModal(null)}>
-          <div className="bg-[#16181a] rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">📎 Vincular Documentos</h3>
-            <p className="text-sm text-[#9aa0a6] mb-4">Arrastra documentos aquí o selecciona de la lista.</p>
-            <div className="space-y-2 mb-4">
-              <div className="p-3 bg-[#0f1113] rounded-lg border border-dashed border-[#272829] text-center text-sm text-[#9aa0a6]">
-                📤 Drop files to upload (coming soon)
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setShowDocsModal(null)} className="flex-1 py-2 bg-[#272829] rounded-xl">Cerrar</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
