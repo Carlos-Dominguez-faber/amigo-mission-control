@@ -137,6 +137,7 @@ export default function TaskBoard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Data hooks - MUST be called before any early returns
   const { tasks, isLoaded, isOnline, addTask, updateTaskStatus, updateTaskAssignee, updateTaskPriority, deleteTask } = useTasks();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
@@ -154,6 +155,7 @@ export default function TaskBoard() {
   const { members: teamMembers, isLoaded: teamLoaded } = useTeam();
   const { agents: officeAgents, isLoaded: officeLoaded } = useOffice();
 
+  // Auth check - runs once on mount
   useEffect(() => {
     const token = localStorage.getItem("sb-access-token");
     if (!token) {
@@ -164,6 +166,14 @@ export default function TaskBoard() {
     setLoading(false);
   }, [router]);
 
+  // Avatar state
+  useEffect(() => {
+    if (isLoaded) {
+      setAvatarState(detectAvatarState(tasks));
+    }
+  }, [tasks, isLoaded]);
+
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0b0c0e] flex items-center justify-center">
@@ -172,13 +182,11 @@ export default function TaskBoard() {
     );
   }
 
+  // Not authenticated
   if (!isAuthenticated) return null;
 
-  useEffect(() => {
-    if (isLoaded) {
-      setAvatarState(detectAvatarState(tasks));
-    }
-  }, [tasks, isLoaded]);
+  // Data not loaded
+  if (!isLoaded) return <div className="min-h-screen bg-[#0b0c0e] flex items-center justify-center"><div className="text-[#7c3aed]">Loading...</div></div>;
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,8 +196,6 @@ export default function TaskBoard() {
   };
 
   const tasksByStatus = (status: TaskStatus) => tasks.filter(t => t.status === status);
-
-  if (!isLoaded) return <div className="min-h-screen bg-[#0b0c0e] flex items-center justify-center"><div className="text-[#7c3aed]">Loading...</div></div>;
 
   return (
     <div className="min-h-screen bg-[#0b0c0e] text-white">
