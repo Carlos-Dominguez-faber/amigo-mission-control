@@ -8,6 +8,8 @@ interface UseMemoriesReturn {
   memories: Memory[];
   isLoaded: boolean;
   addMemory: (memory: Partial<Memory>) => Promise<Memory>;
+  updateMemory: (id: string, updates: Partial<Memory>) => Promise<void>;
+  deleteMemory: (id: string) => Promise<void>;
 }
 
 export function useMemories(): UseMemoriesReturn {
@@ -55,9 +57,29 @@ export function useMemories(): UseMemoriesReturn {
     return created;
   }
 
+  async function updateMemory(id: string, updates: Partial<Memory>): Promise<void> {
+    const { error } = await supabase
+      .from("memories")
+      .update(updates)
+      .eq("id", id);
+    if (error) throw error;
+    setMemories((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)));
+  }
+
+  async function deleteMemory(id: string): Promise<void> {
+    const { error } = await supabase
+      .from("memories")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+    setMemories((prev) => prev.filter((m) => m.id !== id));
+  }
+
   return {
     memories,
     isLoaded,
     addMemory,
+    updateMemory,
+    deleteMemory,
   };
 }

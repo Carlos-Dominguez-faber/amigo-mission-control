@@ -6,6 +6,7 @@ import { NavigationTabs, type TabId } from "@/features/dashboard/components/Navi
 import TaskBoard from "@/features/tasks/components/TaskBoard";
 import ContentBoard from "@/features/content/components/ContentBoard";
 import CalendarBoard from "@/features/calendar/components/CalendarBoard";
+import MemoryBoard from "@/features/memory/components/MemoryBoard";
 import { DocumentPreviewModal } from "@/features/tasks/components/DocumentPreviewModal";
 import type { AvatarState } from "@/shared/components/AnimatedAvatar";
 import { useTasks } from "@/features/tasks/hooks/useTasks";
@@ -56,7 +57,9 @@ export default function DashboardPage() {
 
         {activeTab === "calendar" && <CalendarBoard />}
 
-        {activeTab !== "tasks" && activeTab !== "content" && activeTab !== "calendar" && (
+        {activeTab === "memory" && <MemoryBoard />}
+
+        {activeTab !== "tasks" && activeTab !== "content" && activeTab !== "calendar" && activeTab !== "memory" && (
           <div className="text-center py-20 text-[#9aa0a6]">
             <p className="text-lg font-medium">Coming Soon</p>
             <p className="text-sm mt-1">This feature is under development.</p>
