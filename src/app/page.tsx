@@ -73,6 +73,29 @@ export default function TaskBoard() {
     if (stored) {
       try {
         loadedTasks = JSON.parse(stored);
+        
+        // Check if Supabase tasks exist, if not add them
+        const hasSupabaseTask = loadedTasks.some((t: Task) => t.title.includes("Supabase"));
+        if (!hasSupabaseTask) {
+          const now = Date.now();
+          loadedTasks.push({
+            id: `task-${now + 1}`,
+            title: "Crear proyecto Supabase + obtener keys",
+            status: "todo",
+            assignee: "carlos",
+            createdAt: now + 1,
+            updatedAt: now + 1,
+          });
+          loadedTasks.push({
+            id: `task-${now + 2}`,
+            title: "Configurar Supabase en Mission Control",
+            status: "todo",
+            assignee: "amigo",
+            createdAt: now + 2,
+            updatedAt: now + 2,
+          });
+        }
+        
         setTasks(loadedTasks);
       } catch (e) {
         console.error("Failed to parse tasks", e);
@@ -172,8 +195,30 @@ export default function TaskBoard() {
 
   return (
     <div className="min-h-screen bg-[#0b0c0e] text-white">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-16 bg-[#0f1113] flex flex-col items-center py-6 gap-4 z-50">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#0f1113] flex items-center justify-between px-4 z-50 border-b border-[#272829]">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center text-sm">🤝</div>
+          <span className="font-semibold">Mission Control</span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView("tasks")}
+            className={`px-3 py-1.5 rounded-lg text-xs ${view === "tasks" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+          >
+            📋
+          </button>
+          <button
+            onClick={() => setView("docs")}
+            className={`px-3 py-1.5 rounded-lg text-xs ${view === "docs" ? "bg-[#7c3aed]" : "bg-[#272829]"}`}
+          >
+            📁
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden md:fixed left-0 top-0 h-full w-16 bg-[#0f1113] flex flex-col items-center py-6 gap-4 z-50">
         <div className="w-10 h-10 rounded-xl bg-[#7c3aed] flex items-center justify-center text-lg font-bold">
           🤝
         </div>
@@ -198,32 +243,32 @@ export default function TaskBoard() {
       </div>
 
       {/* Main Content */}
-      <div className="pl-16">
+      <div className="pt-14 md:pt-0 md:pl-16">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-[#272829]">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 p-4 md:p-6 border-b border-[#272829]">
           <div className="flex items-center gap-4">
-            <AnimatedAvatar state={avatarState} size="md" />
+            <AnimatedAvatar state={avatarState} size="sm" className="hidden md:block" />
             <div>
-              <h1 className="text-xl font-semibold">Mission Control</h1>
+              <h1 className="text-lg md:text-xl font-semibold">Mission Control</h1>
               <p className="text-xs text-[#9aa0a6]">
-                {avatarState === "working" && "🔄 Working on tasks"}
-                {avatarState === "thinking" && "💭 Waiting for tasks"}
-                {avatarState === "resting" && "😴 No active tasks"}
+                {avatarState === "working" && "🔄 Working"}
+                {avatarState === "thinking" && "💭 Waiting"}
+                {avatarState === "resting" && "😴 Resting"}
               </p>
             </div>
           </div>
           
           {/* Stats */}
-          <div className="flex gap-6 text-sm">
+          <div className="flex gap-4 md:gap-6 text-xs md:text-sm">
             <div>
-              <span className="text-[#9aa0a6]">This Week</span>
-              <span className="ml-2 font-semibold text-[#7c3aed]">
-                {tasksByStatus("done").length} / {tasks.length}
+              <span className="text-[#9aa0a6]">Week</span>
+              <span className="ml-1 md:ml-2 font-semibold text-[#7c3aed]">
+                {tasksByStatus("done").length}/{tasks.length}
               </span>
             </div>
             <div>
-              <span className="text-[#9aa0a6]">In Progress</span>
-              <span className="ml-2 font-semibold text-[#6366f1]">
+              <span className="text-[#9aa0a6]">Active</span>
+              <span className="ml-1 md:ml-2 font-semibold text-[#6366f1]">
                 {tasksByStatus("in-progress").length}
               </span>
             </div>
@@ -235,107 +280,105 @@ export default function TaskBoard() {
             {/* Create Task Form */}
             <form
               onSubmit={handleCreateTask}
-              className="p-6 pb-0"
+              className="p-4 md:p-6 pb-0"
             >
-              <div className="flex gap-3 max-w-2xl">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <input
                   type="text"
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
                   placeholder="Nueva tarea..."
-                  className="flex-1 px-4 py-3 bg-[#16181a] border border-[#272829] rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-white placeholder-[#9aa0a6]"
+                  className="flex-1 px-3 md:px-4 py-2 md:py-3 bg-[#16181a] border border-[#272829] rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent text-white placeholder-[#9aa0a6] text-sm"
                 />
                 <select
                   value={newTaskAssignee}
                   onChange={(e) => setNewTaskAssignee(e.target.value as Assignee)}
-                  className="px-4 py-3 bg-[#16181a] border border-[#272829] rounded-xl focus:ring-2 focus:ring-[#7c3aed] text-white"
+                  className="px-3 md:px-4 py-2 md:py-3 bg-[#16181a] border border-[#272829] rounded-xl focus:ring-2 focus:ring-[#7c3aed] text-white text-sm"
                 >
-                  <option value="carlos">👤 Carlos</option>
-                  <option value="amigo">🤖 Amigo</option>
+                  <option value="carlos">👤</option>
+                  <option value="amigo">🤖</option>
                 </select>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-medium rounded-xl transition-colors"
+                  className="px-4 md:px-6 py-2 md:py-3 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-medium rounded-xl transition-colors text-sm"
                 >
-                  + New
+                  +
                 </button>
               </div>
             </form>
 
-            {/* Kanban Board */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-              {(["todo", "in-progress", "done"] as TaskStatus[]).map((status) => (
-                <div key={status}>
-                  <h2 className="text-sm font-semibold mb-4 flex items-center gap-2 px-2">
-                    <span className={`w-2 h-2 rounded-full ${
-                      status === "todo" ? "bg-[#9aa0a6]" :
-                      status === "in-progress" ? "bg-[#6366f1]" : "bg-[#10b981]"
-                    }`} />
-                    <span className="text-[#9aa0a6]">{statusLabels[status]}</span>
-                    <span className="ml-auto text-xs text-[#9aa0a6]">
-                      {tasksByStatus(status).length}
-                    </span>
-                  </h2>
+            {/* Kanban Board - Horizontal scroll on mobile */}
+            <div className="overflow-x-auto p-4 md:p-6">
+              <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-6 min-w-[800px] md:min-w-0">
+                {(["todo", "in-progress", "done"] as TaskStatus[]).map((status) => (
+                  <div key={status} className="min-w-[200px]">
+                    <h2 className="text-xs font-semibold mb-3 flex items-center gap-2 px-2">
+                      <span className={`w-2 h-2 rounded-full ${
+                        status === "todo" ? "bg-[#9aa0a6]" :
+                        status === "in-progress" ? "bg-[#6366f1]" : "bg-[#10b981]"
+                      }`} />
+                      <span className="text-[#9aa0a6]">{statusLabels[status]}</span>
+                      <span className="ml-auto text-xs text-[#9aa0a6]">
+                        {tasksByStatus(status).length}
+                      </span>
+                    </h2>
 
-                  <div className="space-y-3">
-                    {tasksByStatus(status).map((task) => (
-                      <div
-                        key={task.id}
-                        className={`rounded-2xl border p-4 ${statusColors[status]} hover:border-[#7c3aed]/50 transition-colors`}
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <p className="font-medium text-sm pr-2">{task.title}</p>
-                          <button
-                            onClick={() => handleDelete(task.id)}
-                            className="text-[#9aa0a6] hover:text-red-500 transition-colors text-xs"
-                          >
-                            ✕
-                          </button>
+                    <div className="space-y-2 md:space-y-3">
+                      {tasksByStatus(status).map((task) => (
+                        <div
+                          key={task.id}
+                          className={`rounded-2xl border p-3 ${statusColors[status]} hover:border-[#7c3aed]/50 transition-colors`}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <p className="font-medium text-sm pr-2 line-clamp-2">{task.title}</p>
+                            <button
+                              onClick={() => handleDelete(task.id)}
+                              className="text-[#9aa0a6] hover:text-red-500 transition-colors text-xs flex-shrink-0"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          <div className="flex flex-wrap gap-1.5">
+                            <select
+                              value={task.status}
+                              onChange={(e) =>
+                                handleStatusChange(task.id, e.target.value as TaskStatus)
+                              }
+                              className="text-xs px-2 py-1 bg-[#0f1113] border border-[#272829] rounded-lg text-[#9aa0a6]"
+                            >
+                              <option value="todo">To Do</option>
+                              <option value="in-progress">In Progress</option>
+                              <option value="done">Done</option>
+                            </select>
+
+                            <select
+                              value={task.assignee}
+                              onChange={(e) =>
+                                handleAssigneeChange(task.id, e.target.value as Assignee)
+                              }
+                              className={`text-xs px-2 py-1 border rounded-lg ${
+                                task.assignee === "carlos"
+                                  ? "bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#7c3aed]"
+                                  : "bg-[#10b981]/10 border-[#10b981]/30 text-[#10b981]"
+                              }`}
+                            >
+                              <option value="carlos">👤</option>
+                              <option value="amigo">🤖</option>
+                            </select>
+                          </div>
                         </div>
+                      ))}
 
-                        <div className="flex flex-wrap gap-2">
-                          <select
-                            value={task.status}
-                            onChange={(e) =>
-                              handleStatusChange(task.id, e.target.value as TaskStatus)
-                            }
-                            className="text-xs px-2 py-1.5 bg-[#0f1113] border border-[#272829] rounded-lg text-[#9aa0a6]"
-                          >
-                            <option value="todo">To Do</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="done">Done</option>
-                          </select>
-
-                          <select
-                            value={task.assignee}
-                            onChange={(e) =>
-                              handleAssigneeChange(task.id, e.target.value as Assignee)
-                            }
-                            className={`text-xs px-2 py-1.5 border rounded-lg ${
-                              task.assignee === "carlos"
-                                ? "bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#7c3aed]"
-                                : "bg-[#10b981]/10 border-[#10b981]/30 text-[#10b981]"
-                            }`}
-                          >
-                            <option value="carlos">👤 Carlos</option>
-                            <option value="amigo">🤖 Amigo</option>
-                          </select>
-                        </div>
-
-                        <p className="text-xs text-[#9aa0a6] mt-2">
-                          {new Date(task.updatedAt).toLocaleDateString()}
+                      {tasksByStatus(status).length === 0 && (
+                        <p className="text-[#9aa0a6] text-xs text-center py-6">
+                          No tasks
                         </p>
-                      </div>
-                    ))}
-
-                    {tasksByStatus(status).length === 0 && (
-                      <p className="text-[#9aa0a6] text-xs text-center py-8">
-                        No tasks
-                      </p>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </>
         ) : (

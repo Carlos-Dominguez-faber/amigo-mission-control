@@ -7,6 +7,7 @@ export type AvatarState = "working" | "thinking" | "resting";
 interface AnimatedAvatarProps {
   state: AvatarState;
   size?: "sm" | "md" | "lg";
+  className?: string;
 }
 
 const stateConfig = {
@@ -33,7 +34,7 @@ const stateConfig = {
   },
 };
 
-export default function AnimatedAvatar({ state = "resting", size = "md" }: AnimatedAvatarProps) {
+export default function AnimatedAvatar({ state = "resting", size = "md", className = "" }: AnimatedAvatarProps) {
   const config = stateConfig[state];
   
   const sizeClasses = {
@@ -44,7 +45,7 @@ export default function AnimatedAvatar({ state = "resting", size = "md" }: Anima
 
   return (
     <div
-      className={`inline-flex items-center gap-3 px-4 py-2 rounded-full ${config.bgColor} border ${config.borderColor}`}
+      className={`inline-flex items-center gap-3 px-4 py-2 rounded-full ${config.bgColor} border ${config.borderColor} ${className}`}
     >
       {/* Face Container */}
       <div className={`${sizeClasses[size]} relative rounded-full overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600`}>
