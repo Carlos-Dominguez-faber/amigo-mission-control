@@ -57,36 +57,76 @@ export async function POST(request: Request) {
         break;
 
       case "link": {
-        // Fetch actual page content from the URL
         let pageContent = "";
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 10_000);
-          const res = await fetch(content, {
-            signal: controller.signal,
-            headers: { "User-Agent": "MissionControl-Cortex/1.0" },
-          });
-          clearTimeout(timeout);
+        const url: string = content;
 
-          if (res.ok) {
-            const html = await res.text();
-            // Extract text content: strip HTML tags, scripts, styles
-            pageContent = html
-              .replace(/<script[\s\S]*?<\/script>/gi, "")
-              .replace(/<style[\s\S]*?<\/style>/gi, "")
-              .replace(/<[^>]+>/g, " ")
-              .replace(/\s+/g, " ")
-              .trim()
-              .slice(0, 4000); // Limit to ~4k chars to stay within token limits
+        // Strategy 1: X/Twitter oEmbed API (SPAs that block server-side fetch)
+        const xMatch = url.match(/^https?:\/\/(x\.com|twitter\.com)\/.+\/status\/\d+/);
+        if (xMatch) {
+          try {
+            const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=true`;
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8_000);
+            const res = await fetch(oembedUrl, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (res.ok) {
+              const data = await res.json();
+              // oEmbed html contains the tweet text inside <p> tags
+              const tweetText = (data.html as string)
+                .replace(/<[^>]+>/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+              if (tweetText.length > 20) {
+                pageContent = `Author: ${data.author_name ?? "unknown"}\n\n${tweetText}`;
+              }
+            }
+          } catch {
+            // oEmbed failed, will fall through to generic fetch or URL-only
           }
-        } catch {
-          // If fetch fails (CORS, timeout, etc.), fall back to URL-only analysis
+        }
+
+        // Strategy 2: Generic fetch (works for most regular websites)
+        if (!pageContent) {
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10_000);
+            const res = await fetch(url, {
+              signal: controller.signal,
+              headers: { "User-Agent": "MissionControl-Cortex/1.0" },
+            });
+            clearTimeout(timeout);
+
+            if (res.ok) {
+              const html = await res.text();
+              // Strip scripts, styles, and tags
+              const stripped = html
+                .replace(/<script[\s\S]*?<\/script>/gi, "")
+                .replace(/<style[\s\S]*?<\/style>/gi, "")
+                .replace(/<[^>]+>/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+
+              // Detect SPA shell pages (JavaScript-required) — ignore if too short
+              // or contains telltale "enable JavaScript" messages
+              const isSpaShell =
+                stripped.length < 200 ||
+                /javascript.{0,30}(required|enabled|disabled|browser)/i.test(stripped) ||
+                /enable.{0,10}javascript/i.test(stripped) ||
+                /noscript/i.test(stripped);
+
+              if (!isSpaShell) {
+                pageContent = stripped.slice(0, 4000);
+              }
+            }
+          } catch {
+            // Fetch failed, fall back to URL-only analysis
+          }
         }
 
         if (pageContent) {
-          userMessage = `Analyze this web page.\n\nURL: ${content}\n\nPage content:\n${pageContent}`;
+          userMessage = `Analyze this web page.\n\nURL: ${url}\n\nPage content:\n${pageContent}`;
         } else {
-          userMessage = `Analyze this URL and categorize it based on what the URL suggests:\n\n${content}`;
+          userMessage = `Analyze this URL and categorize it based on what the URL suggests:\n\n${url}`;
         }
         messages.push({ role: "user", content: userMessage });
         break;
