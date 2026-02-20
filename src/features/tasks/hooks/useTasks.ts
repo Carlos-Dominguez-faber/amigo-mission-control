@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Task, TaskStatus, Assignee, Priority } from "@/features/tasks/types";
 import {
@@ -28,10 +28,13 @@ interface UseTasksReturn {
   reload: () => Promise<void>;
 }
 
+let _channelCounter = 0;
+
 export function useTasks(): UseTasksReturn {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
+  const channelName = useRef(`tasks-rt-${++_channelCounter}`);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -53,7 +56,7 @@ export function useTasks(): UseTasksReturn {
   // Supabase Realtime: listen for changes from other clients (e.g. OpenClaw agent)
   useEffect(() => {
     const channel = supabase
-      .channel("tasks-realtime")
+      .channel(channelName.current)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tasks" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { OfficeAgent } from "@/features/office/types";
 
@@ -10,9 +10,12 @@ interface UseOfficeReturn {
   updateAgent: (id: string, updates: Partial<OfficeAgent>) => Promise<void>;
 }
 
+let _officeChannelCounter = 0;
+
 export function useOffice(): UseOfficeReturn {
   const [agents, setAgents] = useState<OfficeAgent[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const channelName = useRef(`office-rt-${++_officeChannelCounter}`);
 
   const loadAgents = useCallback(async () => {
     try {
@@ -36,7 +39,7 @@ export function useOffice(): UseOfficeReturn {
   // Supabase Realtime: listen for agent state changes (e.g. from OpenClaw)
   useEffect(() => {
     const channel = supabase
-      .channel("office-realtime")
+      .channel(channelName.current)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "office_agents" },

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { supabase } from "@/lib/supabase";
 import { DashboardHeader } from "@/features/dashboard/components/DashboardHeader";
 import { NavigationTabs, type TabId } from "@/features/dashboard/components/NavigationTabs";
 import TaskBoard from "@/features/tasks/components/TaskBoard";
@@ -15,12 +16,31 @@ import { DocumentPreviewModal } from "@/shared/components/DocumentPreviewModal";
 import type { AvatarState } from "@/shared/components/AnimatedAvatar";
 import { useTasks } from "@/features/tasks/hooks/useTasks";
 
+interface AmigoOfficeState {
+  agent_state: string;
+  last_activity: string | null;
+}
+
 function detectAvatarState(
-  tasks: { assignee: string; status: string; updated_at: string }[]
+  tasks: { assignee: string; status: string; updated_at: string }[],
+  officeState: AmigoOfficeState | null
 ): AvatarState {
+  // Signal 1: Office agent status (most reliable — agent updates this directly)
+  if (officeState) {
+    const isActive = officeState.agent_state === "executing" || officeState.agent_state === "planning" || officeState.agent_state === "reviewing";
+    if (isActive) {
+      // Check if last_activity is recent (within 10 minutes)
+      const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+      const lastActivity = officeState.last_activity ? new Date(officeState.last_activity).getTime() : 0;
+      if (lastActivity > tenMinutesAgo) {
+        return officeState.agent_state === "executing" ? "working" : "thinking";
+      }
+    }
+  }
+
+  // Signal 2: Task status (fallback)
   const amigoTasks = tasks.filter((t) => t.assignee.toLowerCase() === "amigo");
 
-  // Working: Amigo has in-progress or recently updated todo tasks
   const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
   const amigoWorking = amigoTasks.some(
     (t) =>
@@ -29,11 +49,9 @@ function detectAvatarState(
   );
   if (amigoWorking) return "working";
 
-  // Thinking: Amigo has pending tasks (todo, not recently updated)
   const amigoPending = amigoTasks.some((t) => t.status !== "done");
   if (amigoPending) return "thinking";
 
-  // Resting: Amigo has no pending tasks
   return "resting";
 }
 
@@ -48,7 +66,64 @@ export default function DashboardPage() {
   const [previewDoc, setPreviewDoc] = useState<DocPreview | null>(null);
   const { tasks, isOnline } = useTasks();
 
-  const avatarState = useMemo(() => detectAvatarState(tasks), [tasks]);
+  // Lightweight office agent query for avatar (separate from OfficeBoard's useOffice)
+  const [amigoOffice, setAmigoOffice] = useState<AmigoOfficeState | null>(null);
+
+  const loadAmigoOffice = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from("office_agents")
+        .select("agent_state, last_activity")
+        .ilike("name", "%amigo%")
+        .limit(1)
+        .single();
+
+      if (data) setAmigoOffice(data as AmigoOfficeState);
+    } catch {
+      // Non-critical
+    }
+  }, []);
+
+  // Initial load + Realtime for office_agents
+  useEffect(() => {
+    loadAmigoOffice();
+
+    const channel = supabase
+      .channel("avatar-office-rt")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "office_agents" },
+        () => { loadAmigoOffice(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [loadAmigoOffice]);
+
+  // Poll office status every 15s (more frequent for avatar responsiveness)
+  useEffect(() => {
+    const id = setInterval(loadAmigoOffice, 15_000);
+    return () => clearInterval(id);
+  }, [loadAmigoOffice]);
+
+  // PWA: refetch office on visibility change + manual refresh
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") loadAmigoOffice();
+    }
+    function handleRefresh() { loadAmigoOffice(); }
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("app:refresh", handleRefresh);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("app:refresh", handleRefresh);
+    };
+  }, [loadAmigoOffice]);
+
+  const avatarState = useMemo(
+    () => detectAvatarState(tasks, amigoOffice),
+    [tasks, amigoOffice]
+  );
 
   return (
     <div className="min-h-screen bg-[#0b0c0e]">
