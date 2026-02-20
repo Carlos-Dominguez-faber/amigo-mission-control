@@ -13,8 +13,6 @@ export function CortexCard({ item, onClick }: CortexCardProps) {
   const Icon = SOURCE_TYPE_ICONS[item.source_type] ?? SOURCE_TYPE_ICONS.text;
   const category = item.ai_category ? CATEGORY_MAP[item.ai_category] : null;
   const statusCfg = STATUS_CONFIG[item.status];
-  const isProcessing = item.ai_status === "processing" || item.ai_status === "idle";
-
   return (
     <button
       type="button"
@@ -38,7 +36,7 @@ export function CortexCard({ item, onClick }: CortexCardProps) {
       </div>
 
       {/* AI Summary or processing state */}
-      {isProcessing ? (
+      {item.ai_status === "processing" ? (
         <div className="flex items-center gap-2 mt-1">
           <Loader2 className="w-3 h-3 text-[#7c3aed] animate-spin" />
           <span className="text-xs text-[#9aa0a6]">Analyzing...</span>

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { useContent } from "@/features/content/hooks/useContent";
-import type { ContentItem, ContentStage } from "@/features/content/types";
+import type { ContentItem } from "@/features/content/types";
 import type { ContentFilter } from "@/features/content/constants/content-constants";
 import {
   STAGES_BY_TYPE,
@@ -17,13 +17,13 @@ import { ContentCard } from "./ContentCard";
 import { ContentStatsBar } from "./ContentStatsBar";
 import { ContentFilterBar } from "./content-filter-bar";
 import { ContentModal } from "./ContentModal";
-import { CarouselDetailModal } from "./carousel-detail-modal";
+import { ContentDetailModal } from "./content-detail-modal";
 
 type ModalState =
   | { mode: "closed" }
   | { mode: "add" }
-  | { mode: "edit"; item: ContentItem }
-  | { mode: "carousel"; item: ContentItem };
+  | { mode: "detail"; item: ContentItem }
+  | { mode: "edit"; item: ContentItem };
 
 export default function ContentBoard() {
   const { items, isLoaded, addContent, updateContent, deleteContent } = useContent();
@@ -79,11 +79,7 @@ export default function ContentBoard() {
   }, [columns]);
 
   function handleCardClick(item: ContentItem) {
-    if ((item.content_type ?? "reel") === "carousel") {
-      setModalState({ mode: "carousel", item });
-    } else {
-      setModalState({ mode: "edit", item });
-    }
+    setModalState({ mode: "detail", item });
   }
 
   async function handleAdd(data: Partial<ContentItem>) {
@@ -95,8 +91,13 @@ export default function ContentBoard() {
     await updateContent(modalState.item.id, data);
   }
 
-  async function handleDelete() {
+  async function handleDeleteFromEdit() {
     if (modalState.mode !== "edit") return;
+    await deleteContent(modalState.item.id);
+  }
+
+  async function handleDeleteFromDetail() {
+    if (modalState.mode !== "detail") return;
     await deleteContent(modalState.item.id);
   }
 
@@ -162,6 +163,16 @@ export default function ContentBoard() {
         />
       )}
 
+      {/* Detail Modal (all content types) */}
+      {modalState.mode === "detail" && (
+        <ContentDetailModal
+          item={modalState.item}
+          onClose={() => setModalState({ mode: "closed" })}
+          onEdit={() => setModalState({ mode: "edit", item: modalState.item })}
+          onDelete={handleDeleteFromDetail}
+        />
+      )}
+
       {/* Edit Modal */}
       {modalState.mode === "edit" && (
         <ContentModal
@@ -169,15 +180,7 @@ export default function ContentBoard() {
           item={modalState.item}
           onClose={() => setModalState({ mode: "closed" })}
           onSubmit={handleEdit}
-          onDelete={handleDelete}
-        />
-      )}
-
-      {/* Carousel Detail Modal */}
-      {modalState.mode === "carousel" && (
-        <CarouselDetailModal
-          item={modalState.item}
-          onClose={() => setModalState({ mode: "closed" })}
+          onDelete={handleDeleteFromEdit}
         />
       )}
     </section>

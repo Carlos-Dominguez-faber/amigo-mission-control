@@ -56,10 +56,41 @@ export async function POST(request: Request) {
         messages.push({ role: "user", content: userMessage });
         break;
 
-      case "link":
-        userMessage = `Analyze this URL and categorize it based on what the URL suggests:\n\n${content}`;
+      case "link": {
+        // Fetch actual page content from the URL
+        let pageContent = "";
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10_000);
+          const res = await fetch(content, {
+            signal: controller.signal,
+            headers: { "User-Agent": "MissionControl-Cortex/1.0" },
+          });
+          clearTimeout(timeout);
+
+          if (res.ok) {
+            const html = await res.text();
+            // Extract text content: strip HTML tags, scripts, styles
+            pageContent = html
+              .replace(/<script[\s\S]*?<\/script>/gi, "")
+              .replace(/<style[\s\S]*?<\/style>/gi, "")
+              .replace(/<[^>]+>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 4000); // Limit to ~4k chars to stay within token limits
+          }
+        } catch {
+          // If fetch fails (CORS, timeout, etc.), fall back to URL-only analysis
+        }
+
+        if (pageContent) {
+          userMessage = `Analyze this web page.\n\nURL: ${content}\n\nPage content:\n${pageContent}`;
+        } else {
+          userMessage = `Analyze this URL and categorize it based on what the URL suggests:\n\n${content}`;
+        }
         messages.push({ role: "user", content: userMessage });
         break;
+      }
 
       case "image":
         messages.push({
