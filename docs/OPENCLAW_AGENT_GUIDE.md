@@ -451,10 +451,72 @@ VALUES ('Market Analysis Research', 'file', 'Research findings...', 'Summary of 
 
 ---
 
+## Real-Time Presence (CRITICAL)
+
+Carlos can see your status in Mission Control at all times. You MUST update your presence every time you do ANYTHING — even simple Telegram conversations.
+
+### On EVERY message received (before doing anything else):
+```sql
+UPDATE office_agents SET
+  agent_state = 'executing',
+  current_task = '<short description of what you are doing>',
+  zone = 'desk',
+  last_activity = NOW(),
+  updated_at = NOW()
+WHERE name = 'Amigo';
+```
+
+### When you finish responding (after your last message):
+```sql
+UPDATE office_agents SET
+  agent_state = 'idle',
+  current_task = NULL,
+  task_progress = NULL,
+  zone = 'lobby',
+  last_activity = NOW(),
+  updated_at = NOW()
+WHERE name = 'Amigo';
+```
+
+### When delegating to a sub-agent (Scout, Quill, Pixel, Echo, Codex):
+```sql
+-- Wake up the sub-agent
+UPDATE office_agents SET
+  agent_state = 'executing',
+  current_task = 'Researching: Top AI tools 2026',
+  task_progress = 0,
+  zone = 'desk',
+  last_activity = NOW(),
+  updated_at = NOW()
+WHERE name = 'Scout';
+
+-- When the sub-agent finishes, put it back to sleep
+UPDATE office_agents SET
+  agent_state = 'idle',
+  current_task = NULL,
+  task_progress = NULL,
+  zone = 'lobby',
+  last_activity = NOW(),
+  updated_at = NOW()
+WHERE name = 'Scout';
+```
+
+**Available sub-agents in office_agents:**
+| Name | Role | Use for |
+|------|------|---------|
+| Scout | Research Agent | Investigations, web search, X/Twitter analysis |
+| Quill | Writer Agent | Scripts, captions, copy, blog posts |
+| Pixel | Designer Agent | Carousel images, thumbnails, design tasks |
+| Echo | Outreach Agent | Social media posting, engagement, outreach |
+| Codex | Developer Agent | Code generation, technical tasks |
+
+---
+
 ## Important Rules
 
-1. **Always update `updated_at`** when modifying tasks - this drives the avatar state
-2. **Always update `office_agents`** when starting/finishing work - this shows in the Office tab
+1. **ALWAYS update `office_agents` on EVERY interaction** - even Telegram chats. This is how Carlos sees you in real-time
+2. **Always update `updated_at`** when modifying tasks - this drives the avatar state
+3. **Always update sub-agents** in `office_agents` when delegating work - Carlos sees them move in the Office
 3. **Use `assignee = 'amigo'`** for tasks you own. `'carlos'` is for the user's tasks
 4. **Never delete data** unless explicitly asked. Use status updates instead
 5. **Use `uploaded_by = 'openclaw'`** when uploading documents so the user knows it came from you
@@ -469,7 +531,14 @@ VALUES ('Market Analysis Research', 'file', 'Research findings...', 'Summary of 
 
 ## Avatar State Logic (How the User Sees You)
 
+The avatar uses TWO signals (office_agents is checked first):
+
 ```
+SIGNAL 1 — office_agents (fastest, most reliable):
+IF Amigo has agent_state IN ('executing','planning','reviewing') AND last_activity > 10min ago
+  -> WORKING (orange) or THINKING (yellow)
+
+SIGNAL 2 — tasks (fallback):
 IF any task has (assignee='amigo' AND status IN ('todo','in-progress') AND updated_at > 5min ago)
   -> WORKING (orange, active animation)
 ELSE IF any task has (status != 'done')
@@ -478,10 +547,11 @@ ELSE
   -> RESTING (gray, eyes closed)
 ```
 
-**Key insight**: If you want the user to see you as "Working", you MUST keep `updated_at` fresh (within 5 minutes). If you're doing a long task, update `updated_at` periodically:
+**Key insight**: The FASTEST way to update the avatar is to update `office_agents`. This is checked every 15 seconds + via Realtime. Always do this FIRST when you start working.
 
 ```sql
-UPDATE tasks SET updated_at = NOW() WHERE id = '<task_id>' AND assignee = 'amigo';
+-- This immediately wakes up the avatar:
+UPDATE office_agents SET agent_state = 'executing', current_task = 'Working on...', last_activity = NOW(), updated_at = NOW() WHERE name = 'Amigo';
 ```
 
 ---
