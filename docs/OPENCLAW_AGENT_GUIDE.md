@@ -556,6 +556,146 @@ UPDATE office_agents SET agent_state = 'executing', current_task = 'Working on..
 
 ---
 
+## Content Creation Workflows
+
+### Creating a Post (Static Image)
+
+A post is a single static image with caption and hashtags. Stages: idea → design → copy → review → published.
+
+```sql
+-- 1. Create the content item
+INSERT INTO content_items (title, description, content_type, stage, platform, assignee, caption, hashtags, posting_notes, created_at, updated_at)
+VALUES (
+  '5 Signs Your Business Needs AI',
+  'Static infographic about AI adoption signals',
+  'post',
+  'idea',
+  'instagram',
+  'amigo',
+  'Is your business ready for AI? Here are 5 signs you can''t ignore anymore...\n\n1. Manual processes are eating your time\n2. Competitors are already using it\n3. Customer expectations are rising\n4. Data is sitting unused\n5. Your team is overwhelmed\n\nDon''t wait until it''s too late.',
+  '#ai #business #automation #productivity #entrepreneur #startup #tech',
+  'Post Tuesday at 9am. Use story to promote.',
+  NOW(), NOW()
+);
+
+-- 2. Move through stages as you work
+UPDATE content_items SET stage = 'design', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'copy', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'review', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'published', updated_at = NOW() WHERE id = '<content_id>';
+```
+
+### Creating a Reel (Video)
+
+A reel is a short-form video with a script. Stages: idea → script → filming → editing → review → published.
+
+```sql
+-- 1. Create the content item with script
+INSERT INTO content_items (title, description, content_type, stage, platform, assignee, script, hashtags, posting_notes, created_at, updated_at)
+VALUES (
+  'I Built an AI Agent in 30 Minutes',
+  'Screen recording tutorial of building a basic AI agent',
+  'reel',
+  'idea',
+  'youtube',
+  'amigo',
+  'HOOK: "I just built an AI agent that does my job... in 30 minutes."\n\nINTRO: Show the finished agent working.\n\nSTEP 1: Set up the environment...\nSTEP 2: Define the system prompt...\nSTEP 3: Connect to tools...\n\nCTA: "Follow for more AI tutorials."',
+  '#aiagent #vibecoding #tutorial #coding #automation',
+  'Film Thursday. Publish Friday at 12pm.',
+  NOW(), NOW()
+);
+
+-- 2. Move through stages
+UPDATE content_items SET stage = 'script', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'filming', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'editing', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'review', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'published', updated_at = NOW() WHERE id = '<content_id>';
+```
+
+### Creating a Carousel (Multiple Images)
+
+A carousel is an ordered set of images with caption and hashtags. Stages: idea → research → design → copy → review → published.
+
+**Step 1: Create the content item**
+```sql
+INSERT INTO content_items (title, description, content_type, stage, platform, assignee, caption, hashtags, posting_notes, created_at, updated_at)
+VALUES (
+  'Top 5 AI Tools for 2026',
+  'Carousel with 5 slides, one per tool',
+  'carousel',
+  'idea',
+  'instagram',
+  'amigo',
+  'These 5 AI tools will change how you work in 2026:\n\n1. Claude Code - AI coding assistant\n2. Cursor - AI-powered IDE\n3. Perplexity - AI search engine\n4. Midjourney - AI image generation\n5. ElevenLabs - AI voice synthesis\n\nSave this post for later!',
+  '#ai #tools #tech #productivity #2026 #artificialintelligence',
+  'Post Monday at 10am. Promote with 3 stories.',
+  NOW(), NOW()
+) RETURNING id;
+-- Save the returned id as <content_id>
+```
+
+**Step 2: Upload images to Supabase Storage**
+
+Use the Supabase Storage API to upload each image file:
+
+```
+POST {SUPABASE_URL}/storage/v1/object/content-media/<content_id>/slide-1.jpg
+Headers:
+  apikey: {SUPABASE_ANON_KEY}
+  Authorization: Bearer {SUPABASE_SERVICE_ROLE_KEY}
+  Content-Type: image/jpeg
+Body: <binary file data>
+```
+
+Get the public URL:
+```
+{SUPABASE_URL}/storage/v1/object/public/content-media/<content_id>/slide-1.jpg
+```
+
+**Step 3: Insert media records (one per image, ordered by position)**
+```sql
+INSERT INTO content_media (content_id, url, storage_path, position, alt_text)
+VALUES
+  ('<content_id>', '{SUPABASE_URL}/storage/v1/object/public/content-media/<content_id>/slide-1.jpg', '<content_id>/slide-1.jpg', 0, 'Cover slide: Top 5 AI Tools'),
+  ('<content_id>', '{SUPABASE_URL}/storage/v1/object/public/content-media/<content_id>/slide-2.jpg', '<content_id>/slide-2.jpg', 1, 'Tool 1: Claude Code'),
+  ('<content_id>', '{SUPABASE_URL}/storage/v1/object/public/content-media/<content_id>/slide-3.jpg', '<content_id>/slide-3.jpg', 2, 'Tool 2: Cursor'),
+  ('<content_id>', '{SUPABASE_URL}/storage/v1/object/public/content-media/<content_id>/slide-4.jpg', '<content_id>/slide-4.jpg', 3, 'Tool 3: Perplexity'),
+  ('<content_id>', '{SUPABASE_URL}/storage/v1/object/public/content-media/<content_id>/slide-5.jpg', '<content_id>/slide-5.jpg', 4, 'Tool 4: Midjourney');
+```
+
+**Step 4: Move through stages**
+```sql
+UPDATE content_items SET stage = 'research', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'design', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'copy', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'review', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'published', updated_at = NOW() WHERE id = '<content_id>';
+```
+
+### How Content Appears in Mission Control
+
+When Carlos clicks on a content card, he sees:
+- **Header**: Type badge (Post/Reel/Carousel) + Platform badge + Stage badge + Title
+- **For carousels**: Image gallery with zoom, individual download, and "Download All"
+- **Sidebar/Body**: Caption (with copy button), Hashtags (with copy button), Script (reels only, with copy button), Posting Notes (with copy button), Description (with copy button)
+- **Metadata**: Stage, Platform, Assignee
+
+**Key**: Carlos uses the copy buttons to paste the caption and hashtags directly into Instagram/YouTube/etc. Make sure caption and hashtags are always polished and ready to publish.
+
+### Storage Buckets Reference
+
+| Bucket | Purpose | Who uploads |
+|--------|---------|-------------|
+| `documents` | General docs linked to tasks | User + Agent |
+| `task-documents` | Legacy task attachments | User |
+| `content-media` | Carousel slide images | Agent (Pixel) |
+| `cortex` | Cortex file uploads | User |
+
+All buckets are public-read. Uploads require authenticated access (use service role key).
+
+---
+
 ## Supabase API Examples (PostgREST)
 
 All operations use the Supabase REST API. Base URL: `{SUPABASE_URL}/rest/v1/`
