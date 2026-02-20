@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Link as LinkIcon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { Document } from "@/features/documents/types";
 import { FILE_TYPE_CONFIG, formatFileSize } from "./docs-constants";
@@ -44,8 +44,17 @@ export function DocCard({ document: doc, onPreview, onRename, onDelete }: DocCar
         <Icon className={`w-8 h-8 shrink-0 ${config.colorClass}`} />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-white truncate">{doc.name}</p>
-          <p className="text-[10px] text-[#9aa0a6]">
+          <p className="text-[10px] text-[#9aa0a6] flex items-center gap-1">
             {formatFileSize(doc.size_bytes)} &middot; {formatDate(doc.uploaded_at)}
+            {doc.linked_type && (
+              <span className="inline-flex items-center gap-0.5 text-[#7c3aed]" title={`Linked to ${doc.linked_type}`}>
+                <LinkIcon className="w-2.5 h-2.5" />
+                {doc.linked_type}
+              </span>
+            )}
+            {doc.uploaded_by === "openclaw" && (
+              <span className="text-[#22c55e]">by Amigo</span>
+            )}
           </p>
         </div>
 

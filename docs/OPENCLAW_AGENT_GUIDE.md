@@ -277,12 +277,14 @@ documents (
 1. Upload file to Supabase Storage bucket "documents":
    POST /storage/v1/object/documents/{folder_or_root}/{timestamp}-{filename}
 
-2. Insert record:
-   INSERT INTO documents (name, file_type, storage_path, url, size_bytes, folder_id, uploaded_by)
-   VALUES ('report.pdf', 'pdf', 'root/1234-report.pdf', '<public_url>', 12345, NULL, 'openclaw');
+2. Insert record (ALWAYS include linked_type + linked_id when the document belongs to a task):
+   INSERT INTO documents (name, file_type, storage_path, url, size_bytes, folder_id, uploaded_by, linked_type, linked_id)
+   VALUES ('report.pdf', 'pdf', 'root/1234-report.pdf', '<public_url>', 12345, NULL, 'openclaw', 'task', '<task_id>');
 ```
 
-#### Link a document to a task
+**IMPORTANT**: When you create a document as part of a task, you MUST set `linked_type = 'task'` and `linked_id = '<task_id>'` at insert time. This links the document to the task in the UI so the user can see the association.
+
+#### Link a document to a task (after the fact)
 ```sql
 UPDATE documents SET linked_type = 'task', linked_id = '<task_id>' WHERE id = '<doc_id>';
 ```
@@ -376,17 +378,26 @@ UPDATE office_agents SET
 WHERE name = 'Amigo';
 ```
 
-### When Creating a Report
+### When Creating a Document for a Task
 
 ```sql
 -- 1. Upload file to storage bucket "documents"
--- 2. Create document record
-INSERT INTO documents (name, file_type, storage_path, url, size_bytes, folder_id, uploaded_by)
-VALUES ('Weekly Report 2026-02-19.pdf', 'pdf', 'reports/1234-weekly_report.pdf', '<url>', 54321, '<reports_folder_id>', 'openclaw');
+-- 2. Create document record WITH linked_type and linked_id pointing to the task
+INSERT INTO documents (name, file_type, storage_path, url, size_bytes, folder_id, uploaded_by, linked_type, linked_id)
+VALUES (
+  'Research - Market Analysis.md', 'text',
+  'root/1708300000-research-market-analysis.md', '<public_url>',
+  8192, NULL, 'openclaw',
+  'task', '<task_id>'  -- ALWAYS link to the originating task
+);
 
--- 3. Optionally add to Cortex for AI analysis
+-- 3. Update task notes to mention the document
+UPDATE tasks SET notes = 'Research completed. Document uploaded: Research - Market Analysis.md', updated_at = NOW()
+WHERE id = '<task_id>';
+
+-- 4. Optionally add to Cortex for AI analysis
 INSERT INTO cortex_items (title, source_type, raw_content, ai_summary, ai_category, ai_status, processed_at)
-VALUES ('Weekly Report Feb 19', 'file', 'Weekly performance report...', 'Summary of weekly metrics...', 'resources', 'done', NOW());
+VALUES ('Market Analysis Research', 'file', 'Research findings...', 'Summary of findings...', 'resources', 'done', NOW());
 ```
 
 ---
@@ -398,11 +409,12 @@ VALUES ('Weekly Report Feb 19', 'file', 'Weekly performance report...', 'Summary
 3. **Use `assignee = 'amigo'`** for tasks you own. `'carlos'` is for the user's tasks
 4. **Never delete data** unless explicitly asked. Use status updates instead
 5. **Use `uploaded_by = 'openclaw'`** when uploading documents so the user knows it came from you
-6. **Keep `current_task` short** (under 60 characters) - it shows as a speech bubble in the Office
-7. **Valid priorities**: `low`, `medium`, `high` - don't use other values
-8. **Valid statuses**: `todo`, `in-progress`, `done` - don't use other values
-9. **Valid stages** for content: `idea`, `script`, `thumbnail`, `filming`, `editing`, `published`
-10. **Valid platforms** for content: `youtube`, `instagram`, `tiktok`, `linkedin`, `twitter`
+6. **Always set `linked_type` and `linked_id`** when uploading documents as part of a task. Use `linked_type = 'task'` and `linked_id = '<task_id>'`. This shows the link in the Docs tab
+7. **Keep `current_task` short** (under 60 characters) - it shows as a speech bubble in the Office
+8. **Valid priorities**: `low`, `medium`, `high` - don't use other values
+9. **Valid statuses**: `todo`, `in-progress`, `done` - don't use other values
+10. **Valid stages** for content: `idea`, `script`, `thumbnail`, `filming`, `editing`, `published`
+11. **Valid platforms** for content: `youtube`, `instagram`, `tiktok`, `linkedin`, `twitter`
 
 ## Avatar State Logic (How the User Sees You)
 

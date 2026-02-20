@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, Download, ExternalLink, AlertCircle } from "lucide-react";
+import { X, Download, ExternalLink, AlertCircle, Loader2 } from "lucide-react";
 
 interface DocumentPreviewModalProps {
   url: string;
@@ -11,15 +11,55 @@ interface DocumentPreviewModalProps {
 }
 
 function isImage(fileType: string): boolean {
-  return fileType.startsWith("image");
+  return fileType === "image" || fileType.startsWith("image");
 }
 
 function isPdf(fileType: string): boolean {
   return fileType === "pdf" || fileType.includes("pdf");
 }
 
+function isText(fileType: string, name: string): boolean {
+  if (fileType === "text" || fileType.startsWith("text/")) return true;
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  return [
+    "md", "txt", "csv", "json", "yml", "yaml", "xml", "log",
+    "sh", "py", "js", "ts", "tsx", "jsx", "css", "html", "sql",
+  ].includes(ext);
+}
+
+function TextPreview({ url }: { url: string }) {
+  const [content, setContent] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.text();
+      })
+      .then(setContent)
+      .catch(() => setError(true));
+  }, [url]);
+
+  if (error) return null; // fallback handled by parent
+  if (content === null) {
+    return (
+      <div className="flex items-center justify-center p-8 min-h-[40vh]">
+        <Loader2 className="w-6 h-6 text-[#7c3aed] animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <pre className="p-6 text-sm text-[#e0e0e0] font-mono whitespace-pre-wrap break-words leading-relaxed overflow-auto max-h-[70vh]">
+      {content}
+    </pre>
+  );
+}
+
 export function DocumentPreviewModal({ url, fileType, name, onClose }: DocumentPreviewModalProps) {
   const [loadError, setLoadError] = useState(false);
+  const canPreviewText = isText(fileType, name);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -36,6 +76,11 @@ export function DocumentPreviewModal({ url, fileType, name, onClose }: DocumentP
   function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) onClose();
   }
+
+  const showPdf = !loadError && isPdf(fileType);
+  const showImage = !loadError && !showPdf && isImage(fileType);
+  const showText = !loadError && !showPdf && !showImage && canPreviewText;
+  const showFallback = !loadError && !showPdf && !showImage && !showText;
 
   return (
     <div
@@ -92,7 +137,7 @@ export function DocumentPreviewModal({ url, fileType, name, onClose }: DocumentP
               <a
                 href={url}
                 download={name}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#7c3aed] text-white text-sm font-medium hover:bg-[#6d28d9] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed] focus-visible:ring-offset-2 focus-visible:ring-offset-[#16181a]"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#7c3aed] text-white text-sm font-medium hover:bg-[#6d28d9] transition-colors"
               >
                 <Download className="w-4 h-4" aria-hidden="true" />
                 Download instead
@@ -100,7 +145,7 @@ export function DocumentPreviewModal({ url, fileType, name, onClose }: DocumentP
             </div>
           )}
 
-          {!loadError && isPdf(fileType) && (
+          {showPdf && (
             <iframe
               src={url}
               title={name}
@@ -109,7 +154,7 @@ export function DocumentPreviewModal({ url, fileType, name, onClose }: DocumentP
             />
           )}
 
-          {!loadError && isImage(fileType) && (
+          {showImage && (
             <div className="flex items-center justify-center p-4 h-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -121,13 +166,15 @@ export function DocumentPreviewModal({ url, fileType, name, onClose }: DocumentP
             </div>
           )}
 
-          {!loadError && !isPdf(fileType) && !isImage(fileType) && (
+          {showText && <TextPreview url={url} />}
+
+          {showFallback && (
             <div className="flex flex-col items-center justify-center gap-4 p-8 text-center min-h-[40vh]">
               <p className="text-[#9aa0a6] text-sm">Preview is not available for this file type.</p>
               <a
                 href={url}
                 download={name}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#7c3aed] text-white text-sm font-medium hover:bg-[#6d28d9] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed] focus-visible:ring-offset-2 focus-visible:ring-offset-[#16181a]"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#7c3aed] text-white text-sm font-medium hover:bg-[#6d28d9] transition-colors"
               >
                 <Download className="w-4 h-4" aria-hidden="true" />
                 Download {name}

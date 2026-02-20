@@ -51,6 +51,28 @@ export function useOffice(): UseOfficeReturn {
     };
   }, [loadAgents]);
 
+  // PWA: refetch when app returns to foreground
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") loadAgents();
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [loadAgents]);
+
+  // PWA: polling fallback every 30s
+  useEffect(() => {
+    const id = setInterval(loadAgents, 30_000);
+    return () => clearInterval(id);
+  }, [loadAgents]);
+
+  // PWA: listen for manual refresh event
+  useEffect(() => {
+    function handleRefresh() { loadAgents(); }
+    window.addEventListener("app:refresh", handleRefresh);
+    return () => window.removeEventListener("app:refresh", handleRefresh);
+  }, [loadAgents]);
+
   async function updateAgent(id: string, updates: Partial<OfficeAgent>): Promise<void> {
     const payload = { ...updates, updated_at: new Date().toISOString() };
     const { error } = await supabase

@@ -58,7 +58,6 @@ export function useTasks(): UseTasksReturn {
         "postgres_changes",
         { event: "*", schema: "public", table: "tasks" },
         () => {
-          // Refetch all tasks on any change from another client
           loadTasks();
         }
       )
@@ -67,6 +66,28 @@ export function useTasks(): UseTasksReturn {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [loadTasks]);
+
+  // PWA: refetch when app returns to foreground (WebSocket may have died in background)
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") loadTasks();
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [loadTasks]);
+
+  // PWA: polling fallback every 30s in case Realtime drops silently
+  useEffect(() => {
+    const id = setInterval(loadTasks, 30_000);
+    return () => clearInterval(id);
+  }, [loadTasks]);
+
+  // PWA: listen for manual refresh event from header button
+  useEffect(() => {
+    function handleRefresh() { loadTasks(); }
+    window.addEventListener("app:refresh", handleRefresh);
+    return () => window.removeEventListener("app:refresh", handleRefresh);
   }, [loadTasks]);
 
   async function addTask(
