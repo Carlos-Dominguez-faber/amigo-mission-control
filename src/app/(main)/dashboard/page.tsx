@@ -18,7 +18,7 @@ import { useTasks } from "@/features/tasks/hooks/useTasks";
 function detectAvatarState(
   tasks: { assignee: string; status: string; updated_at: string }[]
 ): AvatarState {
-  const amigoTasks = tasks.filter((t) => t.assignee === "amigo");
+  const amigoTasks = tasks.filter((t) => t.assignee.toLowerCase() === "amigo");
 
   // Working: Amigo has in-progress or recently updated todo tasks
   const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;

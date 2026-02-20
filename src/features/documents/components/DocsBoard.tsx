@@ -37,8 +37,6 @@ export default function DocsBoard() {
   const [modal, setModal] = useState<ModalState>({ mode: "closed" });
   const [showUploadZone, setShowUploadZone] = useState(false);
 
-  const fileInputRef = useState<HTMLInputElement | null>(null);
-
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center py-20">

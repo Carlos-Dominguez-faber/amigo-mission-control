@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTasks } from "@/features/tasks/hooks/useTasks";
+import { fetchDocumentCountsByTaskIds } from "@/features/tasks/services/documentService";
 import type { Task, TaskStatus } from "@/features/tasks/types";
 import TaskColumn from "./TaskColumn";
 import TaskCard from "./TaskCard";
@@ -32,6 +33,23 @@ export default function TaskBoard({ onDocumentPreview }: TaskBoardProps) {
   } = useTasks();
 
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [docCounts, setDocCounts] = useState<Record<string, number>>({});
+
+  // Fetch document counts for all tasks
+  const loadDocCounts = useCallback(async () => {
+    if (tasks.length === 0) return;
+    try {
+      const ids = tasks.map((t) => t.id);
+      const counts = await fetchDocumentCountsByTaskIds(ids);
+      setDocCounts(counts);
+    } catch {
+      // Non-critical, silently ignore
+    }
+  }, [tasks]);
+
+  useEffect(() => {
+    loadDocCounts();
+  }, [loadDocCounts]);
 
   // Memoize tasks grouped by status
   const tasksByStatus = useMemo(() => {
@@ -104,7 +122,7 @@ export default function TaskBoard({ onDocumentPreview }: TaskBoardProps) {
                     <TaskCard
                       key={task.id}
                       task={task}
-                      documentCount={0}
+                      documentCount={docCounts[task.id] ?? 0}
                       isExpanded={isExpanded}
                       onToggleExpand={() => handleToggleExpand(task.id)}
                       onStatusChange={(newStatus) => updateTaskStatus(task.id, newStatus)}

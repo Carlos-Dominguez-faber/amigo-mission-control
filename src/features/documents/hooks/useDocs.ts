@@ -48,6 +48,22 @@ export function useDocs() {
     loadContents(currentFolderId);
   }, [currentFolderId, loadContents]);
 
+  // PWA: refetch when app returns to foreground
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") loadContents(currentFolderId);
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [currentFolderId, loadContents]);
+
+  // PWA: listen for manual refresh event
+  useEffect(() => {
+    function handleRefresh() { loadContents(currentFolderId); }
+    window.addEventListener("app:refresh", handleRefresh);
+    return () => window.removeEventListener("app:refresh", handleRefresh);
+  }, [currentFolderId, loadContents]);
+
   function navigateToFolder(folderId: string | null) {
     setIsLoaded(false);
     setCurrentFolderId(folderId);
