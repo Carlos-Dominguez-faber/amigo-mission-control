@@ -64,30 +64,61 @@ UPDATE tasks SET notes = 'Progress notes here...', updated_at = NOW() WHERE id =
 
 ### Table: `content_items`
 
-Content production pipeline. Use this to create and track video/post content.
+Content production pipeline. Supports three content types: **post** (static image), **reel** (video), **carousel** (multiple ordered images).
 
 ```sql
 content_items (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title       TEXT NOT NULL,
-  description TEXT,
-  stage       TEXT NOT NULL CHECK (stage IN ('idea', 'script', 'thumbnail', 'filming', 'editing', 'published')),
-  platform    TEXT NOT NULL CHECK (platform IN ('youtube', 'instagram', 'tiktok', 'linkedin', 'twitter')),
-  assignee    TEXT NOT NULL DEFAULT 'carlos',
-  script      TEXT,
-  image_url   TEXT,
-  created_at  TIMESTAMPTZ NOT NULL,
-  updated_at  TIMESTAMPTZ NOT NULL
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title         TEXT NOT NULL,
+  description   TEXT,
+  content_type  TEXT NOT NULL DEFAULT 'reel' CHECK (content_type IN ('post', 'reel', 'carousel')),
+  stage         TEXT NOT NULL CHECK (stage IN ('idea', 'script', 'filming', 'editing', 'design', 'copy', 'research', 'review', 'published')),
+  platform      TEXT NOT NULL CHECK (platform IN ('youtube', 'instagram', 'tiktok', 'linkedin', 'twitter')),
+  assignee      TEXT NOT NULL DEFAULT 'carlos',
+  script        TEXT,
+  image_url     TEXT,
+  caption       TEXT,
+  hashtags      TEXT,
+  posting_notes TEXT,
+  created_at    TIMESTAMPTZ NOT NULL,
+  updated_at    TIMESTAMPTZ NOT NULL
 )
 ```
 
-#### Create a content idea
+**Stages by content type:**
+- **Post**: idea → design → copy → review → published
+- **Reel**: idea → script → filming → editing → review → published
+- **Carousel**: idea → research → design → copy → review → published
+
+#### Create a reel idea
 ```sql
-INSERT INTO content_items (title, description, stage, platform, assignee, created_at, updated_at)
-VALUES ('Video Title', 'Brief description', 'idea', 'youtube', 'amigo', NOW(), NOW());
+INSERT INTO content_items (title, description, content_type, stage, platform, assignee, created_at, updated_at)
+VALUES ('Video Title', 'Brief description', 'reel', 'idea', 'youtube', 'amigo', NOW(), NOW());
 ```
 
-#### Add a script to existing content
+#### Create a carousel with caption and hashtags
+```sql
+INSERT INTO content_items (title, description, content_type, stage, platform, assignee, caption, hashtags, posting_notes, created_at, updated_at)
+VALUES (
+  'Top 5 AI Tools', 'A carousel about the best AI tools', 'carousel', 'idea', 'instagram', 'amigo',
+  'Here are the top 5 AI tools you need to know about...',
+  '#ai #tools #tech #productivity #automation',
+  'Post at 9am. Tag @openai and @anthropic.',
+  NOW(), NOW()
+);
+```
+
+#### Add images to a carousel (use content_media table)
+```sql
+-- After uploading files to the 'content-media' storage bucket:
+INSERT INTO content_media (content_id, url, storage_path, position)
+VALUES
+  ('<content_id>', '<public_url_1>', '<content_id>/slide1.jpg', 0),
+  ('<content_id>', '<public_url_2>', '<content_id>/slide2.jpg', 1),
+  ('<content_id>', '<public_url_3>', '<content_id>/slide3.jpg', 2);
+```
+
+#### Add a script to a reel
 ```sql
 UPDATE content_items SET script = 'Full script text...', stage = 'script', updated_at = NOW()
 WHERE id = '<content_id>';
@@ -95,8 +126,26 @@ WHERE id = '<content_id>';
 
 #### Move content to next stage
 ```sql
-UPDATE content_items SET stage = 'editing', updated_at = NOW() WHERE id = '<content_id>';
+UPDATE content_items SET stage = 'review', updated_at = NOW() WHERE id = '<content_id>';
 ```
+
+### Table: `content_media`
+
+Ordered images for carousel content.
+
+```sql
+content_media (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  content_id   UUID NOT NULL REFERENCES content_items(id) ON DELETE CASCADE,
+  url          TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  position     INT NOT NULL,
+  alt_text     TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+)
+```
+
+**Storage bucket**: `content-media` (public read, authenticated upload/delete)
 
 ---
 
@@ -413,8 +462,10 @@ VALUES ('Market Analysis Research', 'file', 'Research findings...', 'Summary of 
 7. **Keep `current_task` short** (under 60 characters) - it shows as a speech bubble in the Office
 8. **Valid priorities**: `low`, `medium`, `high` - don't use other values
 9. **Valid statuses**: `todo`, `in-progress`, `done` - don't use other values
-10. **Valid stages** for content: `idea`, `script`, `thumbnail`, `filming`, `editing`, `published`
-11. **Valid platforms** for content: `youtube`, `instagram`, `tiktok`, `linkedin`, `twitter`
+10. **Valid content types**: `post`, `reel`, `carousel` - always set `content_type` when creating content
+11. **Valid stages** for content: `idea`, `script`, `filming`, `editing`, `design`, `copy`, `research`, `review`, `published` (use only stages valid for the content_type)
+12. **Valid platforms** for content: `youtube`, `instagram`, `tiktok`, `linkedin`, `twitter`
+13. **For carousels**: Upload images to the `content-media` storage bucket and insert records into `content_media` with correct `position` ordering
 
 ## Avatar State Logic (How the User Sees You)
 
@@ -473,7 +524,7 @@ Body: {"agent_state": "executing", "current_task": "...", "task_progress": 25, "
 ### Create content
 ```
 POST /rest/v1/content_items
-Body: {"title": "...", "stage": "idea", "platform": "youtube", "assignee": "amigo", "created_at": "...", "updated_at": "..."}
+Body: {"title": "...", "content_type": "carousel", "stage": "idea", "platform": "instagram", "assignee": "amigo", "caption": "...", "hashtags": "#tag1 #tag2", "posting_notes": "Post at 9am", "created_at": "...", "updated_at": "..."}
 ```
 
 ### Add memory

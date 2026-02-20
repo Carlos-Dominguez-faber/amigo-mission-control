@@ -1,25 +1,13 @@
 "use client";
 
-import type { ContentStage } from "@/features/content/types";
-
 interface ContentColumnProps {
-  stage: ContentStage;
+  label: string;
+  color: string;
   count: number;
   children: React.ReactNode;
 }
 
-export const STAGE_CONFIG: Record<ContentStage, { label: string; color: string }> = {
-  idea:      { label: "Idea",      color: "bg-yellow-400" },
-  script:    { label: "Script",    color: "bg-blue-400" },
-  thumbnail: { label: "Thumbnail", color: "bg-purple-400" },
-  filming:   { label: "Filming",   color: "bg-pink-400" },
-  editing:   { label: "Editing",   color: "bg-orange-400" },
-  published: { label: "Published", color: "bg-green-400" },
-};
-
-export function ContentColumn({ stage, count, children }: ContentColumnProps) {
-  const { label, color } = STAGE_CONFIG[stage];
-
+export function ContentColumn({ label, color, count, children }: ContentColumnProps) {
   return (
     <div className="flex flex-col w-72 min-h-[200px]">
       <div className="flex items-center gap-2 mb-4">

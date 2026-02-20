@@ -43,11 +43,15 @@ export function useContent(): UseContentReturn {
     const payload = {
       title: item.title ?? "",
       description: item.description,
+      content_type: item.content_type ?? "reel",
       stage: item.stage ?? "idea",
       platform: item.platform ?? "youtube",
       assignee: item.assignee ?? "carlos",
       script: item.script,
       image_url: item.image_url,
+      caption: item.caption,
+      hashtags: item.hashtags,
+      posting_notes: item.posting_notes,
       created_at: now,
       updated_at: now,
     };

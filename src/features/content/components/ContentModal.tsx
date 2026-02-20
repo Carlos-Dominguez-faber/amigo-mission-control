@@ -56,11 +56,11 @@ export function ContentModal({ mode, item, onClose, onSubmit, onDelete }: Conten
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={handleBackdropClick}
     >
-      <div className="bg-[#16181a] rounded-2xl border border-[#272829] w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <div className="bg-[#16181a] rounded-2xl border border-[#272829] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#272829]">
           <h2 id="content-modal-title" className="text-sm font-semibold text-white">
-            {mode === "add" ? "New Idea" : "Edit Content"}
+            {mode === "add" ? "New Content" : "Edit Content"}
           </h2>
           <button
             type="button"

@@ -4,41 +4,87 @@ import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import { useContent } from "@/features/content/hooks/useContent";
 import type { ContentItem, ContentStage } from "@/features/content/types";
+import type { ContentFilter } from "@/features/content/constants/content-constants";
+import {
+  STAGES_BY_TYPE,
+  STAGE_CONFIG,
+  UNIFIED_STAGES,
+  UNIFIED_STAGE_MAP,
+  UNIFIED_STAGE_CONFIG,
+} from "@/features/content/constants/content-constants";
 import { ContentColumn } from "./ContentColumn";
 import { ContentCard } from "./ContentCard";
 import { ContentStatsBar } from "./ContentStatsBar";
+import { ContentFilterBar } from "./content-filter-bar";
 import { ContentModal } from "./ContentModal";
+import { CarouselDetailModal } from "./carousel-detail-modal";
 
 type ModalState =
   | { mode: "closed" }
   | { mode: "add" }
-  | { mode: "edit"; item: ContentItem };
-
-const STAGES: ContentStage[] = ["idea", "script", "thumbnail", "filming", "editing", "published"];
+  | { mode: "edit"; item: ContentItem }
+  | { mode: "carousel"; item: ContentItem };
 
 export default function ContentBoard() {
   const { items, isLoaded, addContent, updateContent, deleteContent } = useContent();
   const [modalState, setModalState] = useState<ModalState>({ mode: "closed" });
+  const [filter, setFilter] = useState<ContentFilter>("all");
 
-  const itemsByStage = useMemo(() => {
-    const map: Record<ContentStage, ContentItem[]> = {
-      idea: [], script: [], thumbnail: [], filming: [], editing: [], published: [],
-    };
+  // Filter items by content type
+  const filteredItems = useMemo(() => {
+    if (filter === "all") return items;
+    return items.filter((item) => (item.content_type ?? "reel") === filter);
+  }, [items, filter]);
+
+  // Count by content type (for filter bar)
+  const filterCounts = useMemo(() => {
+    const counts: Record<ContentFilter, number> = { all: items.length, post: 0, reel: 0, carousel: 0 };
     for (const item of items) {
-      map[item.stage].push(item);
+      const t = item.content_type ?? "reel";
+      counts[t] = (counts[t] ?? 0) + 1;
     }
-    return map;
+    return counts;
   }, [items]);
 
-  const counts = useMemo(() => {
-    const c: Record<ContentStage, number> = {
-      idea: 0, script: 0, thumbnail: 0, filming: 0, editing: 0, published: 0,
-    };
-    for (const stage of STAGES) {
-      c[stage] = itemsByStage[stage].length;
+  // Compute visible columns based on filter
+  const columns = useMemo(() => {
+    if (filter === "all") {
+      // Unified view: Idea → In Progress → Review → Published
+      return UNIFIED_STAGES.map((us) => {
+        const config = UNIFIED_STAGE_CONFIG[us];
+        const columnItems = filteredItems.filter(
+          (item) => UNIFIED_STAGE_MAP[item.stage] === us
+        );
+        return { key: us, label: config.label, color: config.color, items: columnItems };
+      });
     }
-    return c;
-  }, [itemsByStage]);
+
+    // Type-specific view: show stages for that type
+    const stages = STAGES_BY_TYPE[filter];
+    return stages.map((stage) => {
+      const config = STAGE_CONFIG[stage];
+      const columnItems = filteredItems.filter((item) => item.stage === stage);
+      return { key: stage, label: config.label, color: config.color, items: columnItems };
+    });
+  }, [filter, filteredItems]);
+
+  // Stats for the stats bar
+  const stats = useMemo(() => {
+    return columns.map((col) => ({
+      key: col.key,
+      label: col.label,
+      color: col.color,
+      count: col.items.length,
+    }));
+  }, [columns]);
+
+  function handleCardClick(item: ContentItem) {
+    if ((item.content_type ?? "reel") === "carousel") {
+      setModalState({ mode: "carousel", item });
+    } else {
+      setModalState({ mode: "edit", item });
+    }
+  }
 
   async function handleAdd(data: Partial<ContentItem>) {
     await addContent(data);
@@ -64,7 +110,9 @@ export default function ContentBoard() {
 
   return (
     <section aria-label="Content pipeline">
-      <ContentStatsBar counts={counts} />
+      <ContentFilterBar activeFilter={filter} counts={filterCounts} onFilterChange={setFilter} />
+
+      <ContentStatsBar stats={stats} />
 
       {/* Add button */}
       <button
@@ -73,7 +121,7 @@ export default function ContentBoard() {
         className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#7c3aed] text-white text-sm font-medium hover:bg-[#6d28d9] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7c3aed] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0c0e]"
       >
         <Plus className="w-4 h-4" aria-hidden="true" />
-        New Idea
+        New Content
       </button>
 
       {/* Empty state */}
@@ -81,22 +129,22 @@ export default function ContentBoard() {
         <div className="mt-6 flex flex-col items-center justify-center gap-2 text-center">
           <p className="text-sm font-medium text-white">No content yet</p>
           <p className="text-xs text-[#9aa0a6]">
-            Click &quot;New Idea&quot; to start your content pipeline.
+            Click &quot;New Content&quot; to start your content pipeline.
           </p>
         </div>
       )}
 
       {/* Horizontal scroll Kanban */}
-      {items.length > 0 && (
+      {filteredItems.length > 0 && (
         <div className="overflow-x-auto pb-4" style={{ scrollbarWidth: "none" }}>
           <div className="flex gap-4 min-w-max">
-            {STAGES.map((stage) => (
-              <ContentColumn key={stage} stage={stage} count={counts[stage]}>
-                {itemsByStage[stage].map((item) => (
+            {columns.map((col) => (
+              <ContentColumn key={col.key} label={col.label} color={col.color} count={col.items.length}>
+                {col.items.map((item) => (
                   <ContentCard
                     key={item.id}
                     item={item}
-                    onEdit={() => setModalState({ mode: "edit", item })}
+                    onEdit={() => handleCardClick(item)}
                   />
                 ))}
               </ContentColumn>
@@ -105,7 +153,7 @@ export default function ContentBoard() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Add Modal */}
       {modalState.mode === "add" && (
         <ContentModal
           mode="add"
@@ -114,6 +162,7 @@ export default function ContentBoard() {
         />
       )}
 
+      {/* Edit Modal */}
       {modalState.mode === "edit" && (
         <ContentModal
           mode="edit"
@@ -121,6 +170,14 @@ export default function ContentBoard() {
           onClose={() => setModalState({ mode: "closed" })}
           onSubmit={handleEdit}
           onDelete={handleDelete}
+        />
+      )}
+
+      {/* Carousel Detail Modal */}
+      {modalState.mode === "carousel" && (
+        <CarouselDetailModal
+          item={modalState.item}
+          onClose={() => setModalState({ mode: "closed" })}
         />
       )}
     </section>

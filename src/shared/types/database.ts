@@ -1,7 +1,8 @@
 export type TaskStatus = "todo" | "in-progress" | "done";
 export type Assignee = "carlos" | "amigo";
 export type Priority = "low" | "medium" | "high";
-export type ContentStage = "idea" | "script" | "thumbnail" | "filming" | "editing" | "published";
+export type ContentType = "post" | "reel" | "carousel";
+export type ContentStage = "idea" | "script" | "filming" | "editing" | "design" | "copy" | "research" | "review" | "published";
 export type ContentPlatform = "youtube" | "instagram" | "tiktok" | "linkedin" | "twitter";
 
 export interface Task {
@@ -44,13 +45,27 @@ export interface ContentItem {
   id: string;
   title: string;
   description?: string;
+  content_type: ContentType;
   stage: ContentStage;
   platform: ContentPlatform;
   assignee: string;
   script?: string;
   image_url?: string;
+  caption?: string;
+  hashtags?: string;
+  posting_notes?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface ContentMediaItem {
+  id: string;
+  content_id: string;
+  url: string;
+  storage_path: string;
+  position: number;
+  alt_text?: string;
+  created_at: string;
 }
 
 export interface CalendarEvent {

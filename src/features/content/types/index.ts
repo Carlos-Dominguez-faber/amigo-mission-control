@@ -1,1 +1,7 @@
-export type { ContentItem, ContentStage, ContentPlatform } from "@/shared/types/database";
+export type {
+  ContentItem,
+  ContentType,
+  ContentStage,
+  ContentPlatform,
+  ContentMediaItem,
+} from "@/shared/types/database";
